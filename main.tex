@@ -29,14 +29,14 @@
   singlelinecheck=false,
   font=small,labelfont=bf,labelsep=space,belowskip=10pt,aboveskip=10pt}
 
-  \floatsetup[table]{capposition=top}
+\floatsetup[table]{capposition=top}
 \floatsetup[figure]{capposition=bottom}
 
 
 \newlength{\parskiplength}
 \setlength{\parskiplength}{8pt}
 
-\setlength{\floatsep}{\parskiplength}
+%\setlength{\floatsep}{\parskiplength}
 \setlength{\textfloatsep}{\parskiplength}
 \setlength{\intextsep}{\parskiplength}
 
@@ -615,11 +615,11 @@ This work investigates different SOTA KD methods and integrates them into the DL
 KD in DLA poses significant challenges owing to the intricate nature of detection, introducing new obstacles related to regression, region proposals, and sparser label volumes \cite{chen2017learning}. As motivated in \cref{sec:KD-methods}, we prioritize feature-based KD methods, with results on DocLayNet in \cref{tab:dla_kd}.
 The performance comparison in terms of mAP metrics and FLOP counts show that Resnet-50 students with SimKD are overall superior in terms of both efficiency and detection, while ViT-Tiny student has the smallest number of parameters with comparable performance in terms of mAP.
 
-However, one can observe a generally large knowledge gap between the teacher and student model ($\approx$ 8\% for ViT and $\approx 10\%$ for the ResNets) as the crucial details about the document object boundaries, shapes, and sizes can get lost during the compression process. Not only that, KD performance with a ViT backbone is worse compared to Resnets due to (i) the attention overhead, \ie transferring this attention-based knowledge to a student model requires careful consideration of how to distill these complex attention patterns effectively,  and (ii) initialization and hyperparameter sensitivity, \eg finding an appropriate domain pretrained checkpoint and setting patch sizes, attention heads, \etc can affect the KD process, requiring more delicate tuning. The CNN layers of Resnets are, on another hand, permutation invariant and provide more flexibility towards KD.
+However, one can observe a generally large knowledge gap between the teacher and student model ($\approx$ 8\% for ViT and $\approx 10\%$ for the ResNets) as the crucial details about the document object boundaries, shapes, and sizes can get lost during the compression process. Not only that, KD performance with a ViT backbone is worse compared to Resnets due to (i) the attention overhead, \ie transferring this attention-based knowledge to a student model requires careful consideration of how to distill these complex attention patterns effectively,  and (ii) initialization and hyperparameter sensitivity, \eg finding an appropriate domain pretrained checkpoint and setting patch sizes, attention heads, \etc can affect the KD process, requiring more delicate tuning. The CNN layers of Resnets are permutation invariant and provide more flexibility towards KD.
 
 KD methods are hard to integrate for object detection frameworks, especially when it comes to ViTs where there is no intermediate multi-scaled FPN module.
 %The challenge lies in how to transfer the teacher's intermediate feature representation to the student model. 
-Our contribution lies in extending the hybrid SimKD~\cite{SimKD} method for the DLA task and also showing competitive analysis with the existing SOTA ReviewKD~\cite{chen2021distilling}.
+Our contribution lies in extending the hybrid SimKD~\cite{SimKD} method for DLA, while showing competitive analysis with the existing SOTA ReviewKD~\cite{chen2021distilling}.
 %Due to this obstacle related to regression, logit-based KD methods \cite{yang2023knowledge} failed to perform satisfactorily as Logits, which represent class scores before softmax normalization, do not provide sufficient information about the spatial localization of objects. 
 %So, we use a feature-based technique ReviewKD \cite{chen2021distilling} and a hybrid technique SimKD \cite{chen2022knowledge} to perform this analysis (see Table \ref{tab:dla_kd}).
 %So it can be concluded that ResNets are the winner for effective KD-DLA, subsequently put to te test in the following downstream DocVQA task by providing accurate localization with a smaller model size.
@@ -656,8 +656,9 @@ However, as these experiments are bound to the layout classes as pre-defined in 
 The same set of experiments was repeated for randomly initialized students (\cref{tab:ablation-vit-rand,tab:ablation-cnn-rand}).
 Given the comprehensive scope of the DIC experiments, we can make claims regarding the overall most performant KD method, the teacher-student capacity gap, and the architecture-pretraining gap.
 ViT-Small student distilled with the SimKD~\cite{SimKD} method performs best in terms of accuracy and AURC. Note that the best ViT-Tiny student with only 5.5M parameters reaches 83\% accuracy with SimKD, only 2.9\% behind the best ViT-Small student with 86M parameters, showing the potential of advanced KD methods in retaining accuracy at such a large capacity gap.
-SimKD performs admirably in terms of accuracy, sometimes (depending on the projector type (MLP and CNN)) as well as the supervised teacher. In terms of AURC, NKD and MSE approaches are best-performing, which are both response-based methods. Another interesting property we investigated has been the pretraining gap by doing distillation experiments from ViT-to-ViT and DiT-to-ViT to see how document pretraining impacts KD performance.
-As shown in \cref{tab:dic}, results indicate that a self-supervised teacher like DiT does not meet expectations when distilling the knowledge to a ViT-based student pretrained with ImageNet weights. This could be attributed to the large representation gap in the feature space between the RVL-CDIP pretrained and ImageNet pretrained models. However, evaluation under covariate shift on RVL-CDIP-N, as shown in ~\cref{tab:rvl_n}, demonstrates DiT-based students (distilled with response-based KD strategies) to perform better than ViT$\to$ViT students, pointing to the potential of self-supervision for robust to distribution shift.
+SimKD performs admirably in terms of accuracy, sometimes (depending on the projector type (MLP and CNN)) as well as the supervised teacher. In terms of AURC, NKD and MSE approaches are best-performing, which are both response-based methods. 
+% Another interesting property we investigated has been the pretraining gap by doing distillation experiments from ViT-to-ViT and DiT-to-ViT to see how document pretraining impacts KD performance.
+Regarding the pretraining gap, as shown in \cref{tab:dic}, results indicate that a self-supervised teacher like DiT does not meet expectations when distilling the knowledge to a ViT-based student pretrained with ImageNet weights. This could be attributed to the large representation gap in the feature space between the RVL-CDIP pretrained and ImageNet pretrained models. However, evaluation under covariate shift on RVL-CDIP-N, as shown in ~\cref{tab:rvl_n}, demonstrates DiT-based students (distilled with response-based KD strategies) to perform better than ViT$\to$ViT students, pointing to the potential of self-supervision for robust to distribution shift.
 
 
 % \draft{
@@ -696,7 +697,7 @@ As shown in \cref{tab:dic}, results indicate that a self-supervised teacher like
 
 \begin{table*}[h]
     \centering
-    \caption{Results of different KD strategies benchmarked for D/ViT-B teachers applied on the \rvl{} dataset.}
+    \caption{Results of KD strategies for D/ViT-B teachers on the \rvl{} dataset.}
     \label{tab:dic}
 \begin{minipage}{1\textwidth}
         \npdecimalsign{.}
@@ -771,7 +772,6 @@ KD-based model compression has been a popular technique in recent years, albeit 
 Our work explores a limited scope of KD for DU at scale, revealing great potential for creating efficient counterparts of cumbersome DLA models used today.
 Moreover, we investigate the potential of DLA for enriching document inputs in downstream DocVQA tasks.
 Traditionally, DocVQA has relied on plain OCR text. While structure-preserving OCR provides a notion of geometric layout for downstream, DLA was never considered before for the same purpose, yet our experiments show promise.
-
 The more comprehensive benchmarking of KD methods in DIC with ID evaluation and a covariate shift protocol reveals interesting observations regarding the feature representation and weight initialization gap between DiT (documents) and ViT (natural images), albeit self-supervision for students is more robust in the OOD setting.
 
 %DLA, being capable of region-level class understanding, compels the preprocessed input toward regional modeling for the downstream DocVQA. We find regional modeling to be a valuable and efficient alternative to conventional OCRs for the downstream performance of DocVQA. To this end, looking at the aspect of efficiency, we claim that KD has a fairly high potential for obtaining efficient DLA models. 
