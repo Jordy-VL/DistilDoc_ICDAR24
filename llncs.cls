@@ -39,6 +39,8 @@
 \let\if@openbib\iffalse
 \DeclareOption{openbib}{\let\if@openbib\iftrue}
 
+
+
 % languages
 \let\switcht@@therlang\relax
 \def\ds@deutsch{\def\switcht@@therlang{\switcht@deutsch}}
@@ -994,7 +996,7 @@ to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
           \typeout{a shorter form with \string\authorrunning\space prior to
                    \string\maketitle}%
           \global\setbox\authrun=\hbox{\small\rm
-          Authors Suppressed Due to Excessive Length}%
+          Van Landeghem et al.}%
        \fi
        \xdef\@author{\copy\authrun}%
        \markboth{\@author}{\@title}%
@@ -1032,24 +1034,19 @@ to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
  \setcounter{@auth}{1}%
 {\lineskip .5em
 \noindent\ignorespaces
-\@author\vskip.35cm}
+\@author}
  {\small\institutename}
  \end{center}%
-
+ \vspace*{-0.8cm}
 \begin{figure}
 \makebox[\textwidth][c]{
-  \includegraphics[width=0.94\textwidth]{images/DistilDoc_Teaser.pdf}
-\captionof{figure}{\texttt{DistilDoc} designs a novel experimental methodology to investigate enriching VRDs with logical layout structure derived from effective KD-based DLA model compression to practically and efficiently improve downstream applications such as DocVQA.}
-  \label{fig:new-hero}
+ \includegraphics[width=1.14\textwidth]{images/DistilDoc_Teaser.pdf}}
+ \caption{\texttt{DistilDoc} designs a novel experimental methodology to investigate enriching VRDs with logical layout structure derived from distilled DLA models to practically and efficiently improve downstream applications such as DocVQA with LLMs.} \label{fig:new-hero}
  \end{figure}
+ \vspace*{-1.2cm}
  }
-   \end{center}
-}
+ 
 
-%  \includegraphics[width=1.25\textwidth]{ICDAR/images/hero_EEv1.jpg}}
-%  \caption{Illustration of the experimental methodology of a multi-exit multi-modal architecture for efficient document image classification proposed in this work. Every step highlights design choices that are benchmarked for achieving \textit{Pareto efficiency}.}
-%  \end{figure}
-%  }
 
 % definition of the "\spnewtheorem" command.
 %
@@ -1244,6 +1241,24 @@ to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
 
 \setlength\arraycolsep{1.4\p@}
 \setlength\tabcolsep{1.4\p@}
+
+
+\let\titleold\title
+\renewcommand{\title}[1]{\titleold{#1}\newcommand{\thetitle}{#1}}
+\def\maketitlesupplementary
+   {
+   %\newpage
+   \onecolumn
+    \begingroup
+        \centering
+        {\Large
+        \textbf{\thetitle}}\\
+        \vspace{0.5em}Supplementary Material \\
+        \vspace{1.0em}
+        %< twocolumn
+    \endgroup
+   }
+
 
 \endinput
 %end of file llncs.cls

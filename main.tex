@@ -4,13 +4,41 @@
 %
 \documentclass[runningheads]{llncs}
 %
+\usepackage{adjustbox}
 \usepackage[T1]{fontenc}
 % Import additional packages in the preamble file, before hyperref
 \input{preamble}
+\usepackage[square]{natbib}
 
 \usepackage{graphicx} % Required for inserting images
 
+\usepackage{caption}
+
+\usepackage{floatrow} 
+
+
+% \captionsetup{belowskip=0pt}
+% \captionsetup{aboveskip=0pt}
+
+
 \begin{document}
+
+%\captionsetup{format=plain, font=small, labelfont=bf}
+\captionsetup{
+  %justification=centering,
+  singlelinecheck=false,
+  font=small,labelfont=bf,labelsep=space,belowskip=10pt,aboveskip=10pt}
+
+  \floatsetup[table]{capposition=top}
+\floatsetup[figure]{capposition=bottom}
+
+
+\newlength{\parskiplength}
+\setlength{\parskiplength}{8pt}
+
+\setlength{\floatsep}{\parskiplength}
+\setlength{\textfloatsep}{\parskiplength}
+\setlength{\intextsep}{\parskiplength}
 
 % \onecolumn
 % \setcounter{tocdepth}{5}
@@ -27,28 +55,31 @@
 \title{\texttt{DistilDoc}: Knowledge Distillation for Visually-Rich Document Applications} %or tasks?
 %DistilDoc: What can Knowledge Distillation do for Visual Documents Representations?
 
-\newcommand{\superaffil}[2]{\textsuperscript{#1}\,#2}
+
+
 
 \author{
-  \small Jordy Van Landeghem\superaffil{1,2}\and
-  \small Subhajit Maity \superaffil{}\and
-  \small Ayan Banerjee\superaffil{3}\and
-  \small Matthew Blaschko\superaffil{1}\and
-  \small Sien Moens\superaffil{1}\and
-  \small Josep Llados\superaffil{3}\and
-  \small Sanket Biswas\superaffil{3}\and
-  \and
-  \footnotesize{
-    \textsuperscript{1}KU Leuven
-    \quad
-    \textsuperscript{2}Contract.fit
-    \quad
-    \textsuperscript{3}Computer Vision Center, Universitat Autònoma de Barcelona}
+  \small Jordy Van Landeghem\inst{1,2}, 
+  \small Subhajit Maity \inst{}, 
+  \small Ayan Banerjee\inst{3}, 
+  \small Matthew Blaschko\inst{1}, 
+  \small Sien Moens\inst{1}, 
+  \small Josep Llados\inst{3}, 
+  \small Sanket Biswas\inst{3}
+}
+
+\institute{\footnotesize KU Leuven 
+    %\and \email{firstname.lastname@student.kuleuven.be}
+\and
+\footnotesize Contract.fit \quad 
+\email{jordy@contract.fit}
+\and
+\footnotesize Computer Vision Center, Universitat Autònoma de Barcelona
 }
 
 \maketitle
 
-
+\input{sec/0_abstract}
 %%%%%%%%% BODY TEXT
 \section{Introduction}
 \label{sec:intro}
@@ -77,7 +108,7 @@ The nature of the (document) dataset has a major impact on the KD process \cite{
     \item  We design a novel evaluation procedure based on the downstream task of zero-shot layout-aware DocVQA to quantify the robustness of distilled DLA models.
 \end{enumerate}
 
-\noindent Nevertheless, our key contributions go beyond mere KD-based compression benchmarking, promoting logical layout analysis over geometric layout to enhance the generalization of DU models toward unseen documents with diverse and complex layouts, as demonstrated in \cref{fig:new-hero}.
+\noindent Nevertheless, our key contributions go beyond mere KD-based compression benchmarking, promoting logical layout analysis over geometric layout to enhance the generalization of DU models toward unseen documents with diverse and complex layouts, as demonstrated in \Cref{fig:new-hero}.
 
 \section{Related Work}
 
@@ -165,7 +196,7 @@ Our work's scope will be offline KD schemes% (vs. online and self-distillation)
     \begin{figure*}[t]
         \centering
         \includegraphics[width=\textwidth]{images/distildoc_v6.pdf}
-        \caption{\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications.}}
+        \caption{\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications. Discussed in detail in \Cref{sec:exps}}}
         \label{fig:backup-hero}
     \end{figure*}
 
@@ -207,7 +238,7 @@ Our work's scope will be offline KD schemes% (vs. online and self-distillation)
     The originally large training size of \rvl{} hinders experimentation (long iteration cycles), which is why we create a subsampled student training set, \rvlone, by randomly selecting 1K images per class.
     By evaluating the full \rvl{} test set, we provide a fair evaluation of the usefulness of KD methods, while avoiding the cumbersomeness of student fine-tuning on such a large dataset.
 
-While \rvl{} is the de facto standard for measuring performance on the task of document classification, the literature \cite{larson2023labelnoise,VanLandeghem2024bdpc} has reported several undesirable characteristics such as (near-)duplicates causing substantial overlap between train and test distributions.
+While \rvl{} is the de facto standard for measuring DIC performance, the literature \cite{larson2023labelnoise,VanLandeghem2024bdpc} has reported several undesirable characteristics such as (near-)duplicates causing substantial overlap between train and test distributions.
     % Without a better alternative existing, we take these points into account when experimenting with KD methods. 
     We complement independently and identically distributed (\textit{i.i.d.}) test set evaluation with benchmarking on RVL-CDIP-N \cite{larson2022evaluating}, which is a covariate shift dataset allowing us to evaluate the robustness of KD methods to domain shift, which is a common problem in real-world applications.
 }
@@ -310,9 +341,9 @@ Every method will be explained with loss functions, additional hyperparameters, 
 where $\gamma \in [0,1]$ is a trade-off and $\tau$ is the temperature parameter.
 
 \begin{equation*}
-    \resizebox{.95\columnwidth}{!}{$
+    %\resizebox{.95\columnwidth}{!}{$
         \mathcal{L}_{\mathrm{NKD}}= \underbrace{[f^t(x)]_c [\tilde{f}^s(x)]_c}_{\text{target}}-\gamma \cdot \tau^2 \cdot \underbrace{\sum_{k \neq c}^K \mathcal{N}\left([f^t(x)]_k^\tau\right) \left(\mathcal{N}\left(\tilde{f}^s(x)^\tau\right)\right)}_{\text{non-target}}
-    $}
+    %$}
 \end{equation*}
 
 \noindent(iv) \textbf{FitNet} \cite{romero2014fitnets} enables feature-based KD by minimizing the Euclidean distance between the intermediate feature maps of the teacher and student networks (i.e., MSE loss). A trainable projector $\mathcal{P}(\cdot)$ (\eg a linear projection layer) is required if the dimensionality of the hint layer(s) $h \in [1, L+1]$ outputs does not correspond to that of the student
@@ -345,9 +376,7 @@ For compatibility with ViT-based architectures, we contribute a novel variant of
 
     \paragraph{Metrics}
     Predictive performance evaluation for DIC follows standard practice with accuracy, whereas we forego the F1 score as the classes are balanced.
-    For DLA, we use the standard metrics of Mean average precision (MAP) @ intersection over union (IOU) [0.50:0.95] of bounding boxes.
-
-    Efficiency evaluation considers the combination of parameter size and FLOPS (floating point operations) to be representative enough to compare distilled models.
+    For DLA, we use the standard metrics of Mean average precision (MAP) @ intersection over union (IOU) [0.50:0.95] of bounding boxes. Efficiency evaluation considers the combination of parameter size and FLOPS (floating point operations) to be representative enough to compare distilled models.
 
 Following calls in the DU literature \cite{VanLandeghem2023dude} to establish calibration and confidence ranking as defaults to the evaluation methodology, we include Expected Calibration Error (\ECE) \cite{niculescu2005predicting,naeini2015obtaining,guo2017calibration} to evaluate top-1 prediction miscalibration and Area-Under-Risk-Coverage-Curve (\AURC) \cite{geifman2017selective,jaeger2023a} to measure selective (\% of test set) accuracy.
     %we did not attempt to measure this for DLA as these measures were not defined for instance segmentation.
@@ -361,10 +390,10 @@ Following calls in the DU literature \cite{VanLandeghem2023dude} to establish ca
 
 }
 
-\subsection{DLA-enriched LLM prompting}\label{sec:supp-procedure-prompt}
+\subsection{DLA-enriched LLM Prompting}\label{sec:supp-procedure-prompt}
 
 \jvl{
-    \paragraph{Downstream DLA-KD evaluation}
+    %\paragraph{Downstream DLA-KD evaluation}
 
     % \draft{
     %   just figured out that it makes sense to:
@@ -374,44 +403,22 @@ Following calls in the DU literature \cite{VanLandeghem2023dude} to establish ca
     %    We also compare downstream performance on DIC when we overlay the image with differently colored visual bounding boxes per DLA type. #full circle
     % }
 
-    An important objective of this work is to demonstrate the usefulness of DLA predictions in downstream VRD tasks. As SOTA DLA models are often as cumbersome (parameter size, GFLOPS) as the downstream models, this motivates the need for KD to obtain more efficient DLA predictors that could be used to enrich document inputs with logical layout information.
+    An important objective is to demonstrate the usefulness of DLA predictions in downstream VRD tasks. As SOTA DLA models are often as cumbersome (parameter size, GFLOPS) as the downstream models, this motivates the need for KD to obtain more efficient DLA predictors that could be used to enrich document inputs with logical layout information.
 
 While we focus on visual-only document inputs in benchmarking KD, we take the opportunity to benchmark DLA as part of a zero-shot DocVQA task setup with text-only LLMs \cite{wang2023layout}, which can benefit from additional layout information when answering questions that appear in certain logical elements ({\small\textsc'what is the first column header of Table 3', 'what is the title of the document?'}). Similarly, it could benefit to know what falls within an infographic picture or legend; which is why we benchmark on SP-DocVQA and InfographicVQA, with the latter containing more visually-rich information. As a model of choice, we have opted for \textsc{Llama-2-7b-chat} \cite{touvron2023llama} with 4-bit quantization to keep GPU memory requirements to a minimum, while still performing sufficiently reliably. Evaluation is done using \ANLS{} \cite{biten2019scene,VanLandeghem2023dude} on predicted answers vs. ground truths.
 
     % do things here
     The prompt design follows \cite{wang2023layout} with a task instruction and placeholders for the question and the document input, the latter depending on the prompt parameterization (see \cref{supp:task_instruction}). Possible values are \textit{plain}, single-spaced OCR tokens, \textit{space}, tokens placed heuristically with whitespaces in their approximate position, or \textit{DLA}, which adds start and end tags such as \xml{Table} and \xmlend{Title}
     to indicate logical layout as predicted by a DLA model.
-    A pseudo-algorithm (\cref{sec:supp-procedure-prompt}) details the procedure to generate DLA-enriched prompts.
+    A pseudo-algorithm (\cref{algo:pseudo}) details the procedure to generate DLA-enriched prompts.
 
     KIE is regarded as an important downstream DU task, yet we believe (as supported by \cite{he23good}) that it would benefit less from DLA, due to most information being organized as key-value pairs with only local context relevance.
 }
 
-
-
-\begin{table}[h]
-    \caption{Prompt design following \cite{wang2023layout}, with placeholders depending on parameterization of document input (\textit{plain, space, DLA}).}
-    \centering
-    \resizebox{0.8\columnwidth}{!}{%
-        \label{supp:task_instruction}
-        \begin{tabular}{cl}
-            \hline \#l & Prompt                                                                                        \\
-            \hline 1   & You are asked to answer questions asked on a document image.                                  \\
-            2          & The answers to questions are short text spans taken verbatim from the document.               \\
-            3          & This means that the answers comprise a set of contiguous text tokens present in the document. \\
-            4          & Document:                                                                                     \\
-            5          & \textcolor{red}{\{Layout Aware Document placeholder\}}                                        \\
-            6          & Question: \textcolor{blue}{\{Question placeholder\}}                                          \\
-            7          &                                                                                               \\
-            8          & Directly extract the answer to the question from the document with as few words as possible.  \\
-            9          &                                                                                               \\
-            10         & Answer:  \textcolor{green}{\{\}}                                                              \\
-            \hline
-        \end{tabular}
-    }
-\end{table}
-
-
-\begin{algorithm} %[H]
+\scalebox{0.86}{
+\centering
+\begin{minipage}{1.1\linewidth}
+\begin{algorithm}[H]
 \footnotesize
     \caption{\small Construction of DLA-enriched prompts $\boldsymbol{p}_{\mathrm{DLA}}$}
     \label{algo:pseudo}
@@ -446,7 +453,7 @@ While we focus on visual-only document inputs in benchmarking KD, we take the op
     \Parameter{Ignore-labels: DLA labels to ignore for enrichment (default: \{'Text'\})}
 
     %\Comment*[l]{Assume DLA model is trained and available} 
-
+    
     \Input{A document image $\boldsymbol{v}$}
     \Require A trained DLA model and an OCR engine
 
@@ -508,6 +515,31 @@ While we focus on visual-only document inputs in benchmarking KD, we take the op
     }
     \Return{$\hat{u}, \hat{s}$} \tcp*{Tokens and token-boxes with DLA labels to be used in prompt design of \cite{wang2023layout}}
 \end{algorithm}
+\end{minipage}
+}
+
+
+\begin{table}[h]
+    \caption{Prompt design following \cite{wang2023layout}, with placeholders depending on parameterization of document input (\textit{plain, space, DLA}).}
+    \centering
+    \resizebox{0.8\columnwidth}{!}{%
+        \label{supp:task_instruction}
+        \begin{tabular}{cl}
+            \hline \#l & Prompt                                                                                        \\
+            \hline 1   & You are asked to answer questions asked on a document image.                                  \\
+            2          & The answers to questions are short text spans taken verbatim from the document.               \\
+            3          & This means that the answers comprise a set of contiguous text tokens present in the document. \\
+            4          & Document:                                                                                     \\
+            5          & \textcolor{red}{\{Layout Aware Document placeholder\}}                                        \\
+            6          & Question: \textcolor{blue}{\{Question placeholder\}}                                          \\
+            7          &                                                                                               \\
+            8          & Directly extract the answer to the question from the document with as few words as possible.  \\
+            9          &                                                                                               \\
+            10         & Answer:  \textcolor{green}{\{\}}                                                              \\
+            \hline
+        \end{tabular}
+    }
+\end{table}
 
 
 \begin{table}[h]
@@ -515,7 +547,9 @@ While we focus on visual-only document inputs in benchmarking KD, we take the op
         %Efficiency metrics are indicated as (M, 1e6), (G, 1e9).
     }
     \label{tab:dla_kd}
-    \resizebox{\columnwidth}{!}{
+    \centering
+    \resizebox{0.7\columnwidth}{!}{
+    \centering
         \begin{tabular}{@{}ccccccc@{}}
             \toprule
             Teacher              & Student              & Method           & mAP$\uparrow$  & Flops$\downarrow$ & Params$\downarrow$ & Im/s$\uparrow$ \\ \midrule
@@ -538,7 +572,7 @@ While we focus on visual-only document inputs in benchmarking KD, we take the op
     \centering
     \caption{Validation \ANLS{} (scaled to \%) of \textsc{Llama-2-7b-chat} \cite{touvron2023llama} on SP-DocVQA \cite{mathew2021docvqa} (top) and InfographicVQA \cite{mathew2022infographicvqa} (bottom), where (if marked) the prompt is enriched with DLA predictions from a ViT-B-based MaskRCNN.}
     \label{tab:downstream_docvqa}
-    \resizebox{0.8\textwidth}{!}{%
+    \resizebox{0.85\textwidth}{!}{%
         \begin{tabular}{@{}lll|c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{}}
 
             %\begin{tabular}{@{}lll|c@{\extracolsep{0.05em}}*{11}{>{\small}c}@{}}
@@ -555,7 +589,7 @@ While we focus on visual-only document inputs in benchmarking KD, we take the op
             %\redmark   & \redmark   & \redmark   & 4.3                   & 4.25        & 5.36   & 1.46           & 2.69  & 8.99       & 1.74        & 6.1    & 7.72   & 1.87       \\
             \bottomrule
         \end{tabular}}
-    \resizebox{0.9\textwidth}{!}{%
+    \resizebox{0.95\textwidth}{!}{%
         \begin{tabular}{@{}lll|c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{}}
             \toprule
             space      & task       & DLA        & $\mathrm{ANLS}_{val}$ & Arithmetic & Comparison & Counting & Figure & Map   & Multi-span & Abs   & Q span & Single span & Table/list & Text  & Visual/layout \\
@@ -775,11 +809,12 @@ Also, DLA being a fairly complicated instance segmentation task, makes it diffic
 
 %endcontenthere
 {\small
-  \bibliographystyle{ieeenat_fullname}
+  \bibliographystyle{splncs04}
   \bibliography{main}
 }
 
 % WARNING: do not forget to delete the supplementary pages from your submission 
 \input{sec/X_suppl}
 
+%can arxiv it
 \end{document}

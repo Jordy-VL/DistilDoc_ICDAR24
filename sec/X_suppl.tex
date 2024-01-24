@@ -1,6 +1,6 @@
 \clearpage
 \setcounter{page}{1}
-\maketitlesupplementary
+
 
 \appendix
 
@@ -14,7 +14,7 @@
 \section{Code and Datasets}\label{supp:code_and_datasets}
 
 \jvl{
-  The proposed KD-VDU experimentation framework is available in the Supplementary zip. This includes the DIC benchmarking that is made fully compatible with HuggingFace \textit{transformers}, even allowing arbitrary image classification models and (document) image datasets from HuggingFace \textit{hub}.\\
+The proposed KD-VDU experimentation framework is available in the Supplementary zip. This includes the DIC benchmarking that is made fully compatible with HuggingFace \textit{transformers}, even allowing arbitrary image classification models and (document) image datasets from HuggingFace \textit{hub}.\\
   The DLA benchmark is built around the \textit{Detectron2} framework, with additional scripts for efficiency evaluation, visualization, and document data preparation for downstream tasks (\Cref{algo:pseudo}).
   Downstream task experiments are made available as a fork of the original LATIN-prompt \cite{wang2023layout} implementations with additional modifications (4-bit quantization, question type ANLS evaluation, InfographicsVQA dataloader, structure-preserving OCR respecting DLA tokens).
 }
@@ -109,36 +109,6 @@ $c_j$ is the class label for the $j$-th element, indicating its object category.
 
 Given a document $d$ and a question $q$, the goal of zero-shot DocVQA is to predict the answer $a$ to the question $q$ from the document, assuming a single document image for simplicity.
 Following the text-only LLM approach in \cite{wang2023layout}, each document image requires to be translated to text, either from OCR or from a born-digital document, and the question is translated to a prompt $p$. The prompt $\boldsymbol{p}$ is a sequence of tokens that is fed to the LLM model, together with a potential task instruction, and the document image text $D$, which is structured following a heuristic procedure operating on the text tokens ($T$) and respective bounding boxes (see \Cref{supp:task_instruction}).
-
-
-\section{DLA-enriched LLM prompting}\label{sec:supp-procedure-prompt}
-
-
-\begin{table}[h]
-  \caption{Prompt design following \cite{wang2023layout}, with placeholders depending on parameterization of document input (\textit{plain, space, DLA}).}
-  \centering
-  \resizebox{0.8\columnwidth}{!}{%
-    \label{supp:task_instruction}
-    \begin{tabular}{cl}
-      \hline \#l & Prompt                                                                                        \\
-      \hline 1   & You are asked to answer questions asked on a document image.                                  \\
-      2          & The answers to questions are short text spans taken verbatim from the document.               \\
-      3          & This means that the answers comprise a set of contiguous text tokens present in the document. \\
-      4          & Document:                                                                                     \\
-      5          & \textcolor{red}{\{Layout Aware Document placeholder\}}                                        \\
-      6          & Question: \textcolor{blue}{\{Question placeholder\}}                                          \\
-      7          &                                                                                               \\
-      8          & Directly extract the answer to the question from the document with as few words as possible.  \\
-      9          &                                                                                               \\
-      10         & Answer:  \textcolor{green}{\{\}}                                                              \\
-      \hline
-    \end{tabular}
-  }
-\end{table}
-
-
-In \Cref{algo:pseudo}, we present a pseudo-algorithm that clarifies the procedure of how to obtain DLA-enriched prompts.
-
 
 \section{Additional experiment results}\label{sec:supp-results}
 
@@ -265,105 +235,6 @@ Vit-B            & ViT-T            & SimKD           &       32.05      \\ %int
                  \bottomrule
 \end{tabular}
 \end{table}
-
-
-\begin{algorithm} %[H]
-  \small
-  \caption{\small Construction of DLA-enriched prompts $\boldsymbol{p}_{\mathrm{DLA}}$}
-  \label{algo:pseudo}
-
-\SetKw{Continue}{continue}
-\SetKw{Break}{break}
-\SetKw{Not}{not}
-
-  \SetKwData{Left}{left}
-  \SetKwData{Require}{\footnotesize \textbf{Require:}}
-  \SetKwData{Ensure}{\footnotesize \textbf{Ensure:}}
-
-\SetKwFunction{DLA}{DLA}
-\SetKwFunction{OCR}{OCR}
-\SetKwFunction{Update}{Update}
-\SetKwFunction{StandardizeBbox}{StandardizeBbox}
-\SetKwFunction{InterpolateBbox}{InterpolateBbox}
-\SetKwFunction{IntersectionOverUnion}{IntersectionOverUnion}
-\SetKwFunction{FullyContains}{FullyContains}
-\SetKwFunction{SortAndLabel}{SortAndLabel}
-
-
-\SetKwInOut{Input}{Input}
-  \SetKwInOut{Parameter}{Parameters}
-\SetKwInOut{Output}{Output}
-
-  \DontPrintSemicolon % Some LaTeX compilers require \dontprintsemicolon
-
-\KwIn{A finite set $\mathcal{D}_{test} = {\{(\mathbf{x}_{(i)}, y_{(i)})\}_{i=1}^{N}}$ of holdout data, consisting of document images $\mathbf{x}_{(i)}$ and corresponding labels $y_{(i)}$}
-\KwOut{Tokenized DLA-enriched prompts $\boldsymbol{p}_{\mathrm{DLA}}$}
-\Parameter{$\tau_{iou}$: IoU-threshold for layout-token boxes (default: 0.3)}
-\Parameter{Ignore-labels: DLA labels to ignore for enrichment (default: \{'Text'\})}
-
-%\Comment*[l]{Assume DLA model is trained and available} 
-
-\Input{A document image $\boldsymbol{v}$}
-\Require A trained DLA model and an OCR engine
-
-\textbf{Feed image to DLA model to obtain labeled layout boxes} \;
-$\left\{\left(b_j, c_j, m_j\right)\right\}_{j=1}^J \gets$ \DLA{$\boldsymbol{v}$} \tcp*{Boxes, classes, metadata}
-
-\textbf{Feed image to OCR engine to obtain tokens and boxes} \;
-$u = \left\{\left(w_t\right)\right\}_{t=1}^T, s = \left\{\left(x_t^1, y_t^1, x_t^2, y_t^2\right)\right\}_{t=1}^T \gets$ \OCR{$\boldsymbol{v}^\prime$} \tcp*{Tokens and token-boxes}
-
-\textbf{Standardize layout boxes to similar xy-format} \;
-\For{$j \gets 1$ \textbf{to} $J$} {
-$b_j \gets$ \StandardizeBbox($b_j$) \tcp*{Standardize to xy-format}
-\If {\OCR image dims $\neq$ \DLA image dims} {  \tcp*{Precomputed OCR (DUE) results can be reused, yet OCR images can have higher resolution}
-  \textbf{Interpolate layout boxes to token-boxes} \;
-  $b_j \gets $ \InterpolateBbox($b_j, \boldsymbol{v}, \boldsymbol{v}^\prime$)} \tcp*{Interpolate layout box to OCR image size}
-}
-
-\textbf{Find closest start and end token-boxes} \;
-\Input{a set of DLA predictions $\mathrm{DLA}(\boldsymbol{v})$, a set of OCR tokens $u$, a set of OCR token-boxes $s$}
-\Output{an updated set of OCR tokens $\hat{u}$, a set of OCR token-boxes $\hat{s}$}
-
-
-\For{$j \gets 1$ \textbf{to} $J$} {
-$S \gets (0, \infty)$; $E \gets (-1, \infty)$\  \tcp*{Initialize start and end with dummy index and distance values}
-\For{$t \gets 1$ \textbf{to} $T$} { \tcp*{Multiple relaxing heuristics to find closest token-box to layout-box}
-
-\If{$c_j \in$ Ignore-labels} {
-  \Continue
-}
-\If{\Not \FullyContains{$b_j, s_t$} or \IntersectionOverUnion{$b_j, s_t$} $> \tau_{iou}$} { \tcp*{Token-box fully contained within layout-box or IoU > threshold}
-  \Continue
-}\tcp*{Minimal Laplacian distance to cornerpoint}
-{
-  $S \gets \min(S, \left(t, \mathrm{Laplacian}(b_j, s_t)\right))$ \tcp*{Laplacian distance to top-left corner}
-  $E \gets \min(E, \left(t, \mathrm{Laplacian}(b_j, s_t)\right))$ \tcp*{Laplacian distance to bottom-right corner}
-}
-}
-}
-
-\textbf{Insert DLA labels before and after closest tokens} \;
-\Input{The original sets of OCR tokens $u$, token-boxes $s$, and start and end indices $S$ and $E$}
-\Output{Updated sets of OCR tokens $\hat{u}$ and token-boxes $\hat{s}$}
-
-$C \gets 0$ \tcp*{Initialize token insertion counter}
-$\hat{u}, \hat{s} \gets u,s$ \tcp*{Initialize to be updated OCR tokens $\hat{u}$ and token-boxes $\hat{s}$}
-$I \gets $\SortAndLabel{S,E} \tcp*{sort start and end token together by index and add label type}
-
-\For{$j \gets 1$ \textbf{to} $|I|$} {
-  \If{$I_j$ is a start token} {
-    $\hat{u} \gets$ insert \xml{$c_j$} at $I_j + C$ \tcp*{Insert label such as <Table> before token}
-    $\hat{s} \gets$ insert $b_j$ at $I_j + C$ \;
-    $C \gets C + 1$ \;
-  }
-  \If{$I_j$ is an end token} {
-    $\hat{u} \gets$ insert \xmlend{$c_j$} at $I_j + C + 1$ \tcp*{Insert label such as </Table> at next token}
-    $\hat{s} \gets$ insert $b_j$ at $I_j + C + 1$ \;
-    $C \gets C + 1$ \;
-  }
-}
-\Return{$\hat{u}, \hat{s}$} \tcp*{Tokens and token-boxes with DLA labels to be used in prompt design of \cite{wang2023layout}}
-\end{algorithm}
 
 
 % Assumption:
