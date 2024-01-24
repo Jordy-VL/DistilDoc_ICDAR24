@@ -62,6 +62,23 @@
 \newcommandx{\exactcopy}[2][1=]{\todo[linecolor=darkorange,backgroundcolor=darkorange!25,bordercolor=darkorange!50,inline,#1,noprepend,caption={}]{\small #2}}
 
 
+%sectioning
+\newcommand{\etal}{\textit{et al}.}
+\newcommand{\ie}{\textit{i}.\textit{e}.}
+\newcommand{\eg}{\textit{e}.\textit{g}.,}
+\makeatletter
+\DeclareRobustCommand\onedot{\futurelet\@let@token\@onedot}
+\def\@onedot{\ifx\@let@token.\else.\null\fi\xspace}
+
+\def\eg{\emph{e.g}\onedot, } \def\Eg{\emph{E.g}\onedot, }
+\def\ie{\emph{i.e}\onedot, } \def\Ie{\emph{I.e}\onedot, }
+\def\cf{\emph{cf}\onedot} \def\Cf{\emph{Cf}\onedot}
+\def\etc{\emph{etc}\onedot} \def\vs{\emph{vs}\onedot}
+\def\wrt{w.r.t\onedot} \def\dof{d.o.f\onedot}
+\def\iid{i.i.d\onedot} \def\wolog{w.l.o.g\onedot}
+\def\etal{\emph{et al}\onedot}
+\makeatother
+
  
 % marks
 \usepackage{amssymb}

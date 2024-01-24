@@ -164,7 +164,7 @@ Our work's scope will be offline KD schemes% (vs. online and self-distillation)
 
     \begin{figure*}[t]
         \centering
-        \includegraphics[width=\textwidth]{images/KDD/distildoc_v6.pdf}
+        \includegraphics[width=\textwidth]{images/distildoc_v6.pdf}
         \caption{\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications.}}
         \label{fig:backup-hero}
     \end{figure*}
@@ -610,10 +610,10 @@ However, as these experiments are bound to the layout classes as pre-defined in 
     \label{tab:covarvsid_perKDmethod}
 \resizebox{1\textwidth}{!}{
         \begin{tabular}{ccc}
-            \includegraphics[width=0.27\textwidth]{images/KDD/Accuracy ID_KDplot.png}
+            \includegraphics[width=0.27\textwidth]{images/Accuracy ID_KDplot.png}
                                                                                  &
-            \includegraphics[width=0.27\textwidth]{images/KDD/ECE ID_KDplot.png} &
-            \includegraphics[width=0.42\textwidth]{images/KDD/AURC ID_KDplot.png}  \\
+            \includegraphics[width=0.27\textwidth]{images/ECE ID_KDplot.png} &
+            \includegraphics[width=0.42\textwidth]{images/AURC ID_KDplot.png}  \\
         \end{tabular}}
 \end{table*}
 
@@ -774,4 +774,12 @@ The downstream task was not tested on \cite{VanLandeghem2023dude} as multipage d
 Also, DLA being a fairly complicated instance segmentation task, makes it difficult to adapt for KD-based model compression, ruling out some KD methods. This calls for a better experimental framework and architectural modeling to boost the exploration of KD in DLA, in turn, incubating downstream advances in processing and understanding VRDs.
 
 %endcontenthere
+{\small
+  \bibliographystyle{ieeenat_fullname}
+  \bibliography{main}
+}
+
+% WARNING: do not forget to delete the supplementary pages from your submission 
+\input{sec/X_suppl}
+
 \end{document}

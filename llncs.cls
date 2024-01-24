@@ -1038,10 +1038,18 @@ to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
 
 \begin{figure}
 \makebox[\textwidth][c]{
- \includegraphics[width=1.25\textwidth]{ICDAR/images/hero_EEv1.jpg}}
- \caption{Illustration of the experimental methodology of a multi-exit multi-modal architecture for efficient document image classification proposed in this work. Every step highlights design choices that are benchmarked for achieving \textit{Pareto efficiency}.}
+  \includegraphics[width=0.94\textwidth]{images/DistilDoc_Teaser.pdf}
+\captionof{figure}{\texttt{DistilDoc} designs a novel experimental methodology to investigate enriching VRDs with logical layout structure derived from effective KD-based DLA model compression to practically and efficiently improve downstream applications such as DocVQA.}
+  \label{fig:new-hero}
  \end{figure}
  }
+   \end{center}
+}
+
+%  \includegraphics[width=1.25\textwidth]{ICDAR/images/hero_EEv1.jpg}}
+%  \caption{Illustration of the experimental methodology of a multi-exit multi-modal architecture for efficient document image classification proposed in this work. Every step highlights design choices that are benchmarked for achieving \textit{Pareto efficiency}.}
+%  \end{figure}
+%  }
 
 % definition of the "\spnewtheorem" command.
 %
