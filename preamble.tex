@@ -1,0 +1,111 @@
+%
+% --- inline annotations
+%
+%hack to fix everyshi.sty: https://tex.stackexchange.com/questions/398223/tikz-gives-error-command-everyshipouthook-already-defined
+\makeatletter
+\@namedef{ver@everyshi.sty}{}
+\makeatother
+\usepackage{tikz}
+
+% Include other packages here, before hyperref.
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[boldmath]{numprint}
+\usepackage{multicol}
+
+% \newcommand{\etal}{\textit{et al}.}
+% \newcommand{\ie}{\textit{i}.\textit{e}.}
+% \newcommand{\eg}{\textit{e}.\textit{g}.}
+\newcommand{\keypoint}[1]{\vspace{0.1cm}\noindent\textbf{#1}\quad}
+
+
+\newcommand{\tobacco}{\textsl{Tobacco-3482}}
+\newcommand{\rvl}{\textsl{RVL-CDIP}}
+\newcommand{\rvlone}{\textsl{RVL-CDIP$_{1k}$}}
+\newcommand{\tablebank}{\textsl{TableBank}}
+\newcommand{\doclaynet}{\textsl{DocLayNet}}
+\newcommand{\prima}{\textsl{PRImA}}
+
+%metrics
+\newcommand{\ECE}{$\mathrm{ECE}$}
+\newcommand{\NLL}{$\mathrm{NLL}$}
+\newcommand{\BS}{$\mathrm{BS}$}
+\newcommand{\EAURC}{$\mathrm{E-AURC}$}
+\newcommand{\AUROC}{$\mathrm{AUROC}$}
+\newcommand{\AURC}{$\mathrm{AURC}$}
+\newcommand{\ANLS}{$\mathrm{ANLS}$}
+
+% colors
+\colorlet{darkgreen}{green!60!black!80!}
+\colorlet{darkorange}{orange!60!black!80!}
+\colorlet{purple}{red!80!green!20!blue!60!}
+\colorlet{darkpurple}{red!90!green!20!blue!90!}
+
+\definecolor{OliveGreen}{cmyk}{0.64,0,0.95,0.40}
+\definecolor{ForestGreen}{RGB}{34,139,34}
+% Reviews
+\newcommand{\smy}[1]
+{\leavevmode#1}%{{\leavevmode\color{orange}#1}}
+\newcommand{\sbs}[1]{\leavevmode#1}%{{\leavevmode\color{blue}#1}}
+\newcommand{\ayb}[1]{\leavevmode#1}%{{\leavevmode\color{brown}#1}}
+\newcommand{\jvl}[1]{\leavevmode#1}%{{\leavevmode\color{darkpurple}#1}}
+\newcommand{\commentout}[1]{\ignorespaces}
+
+% Drafting
+\setlength {\marginparwidth }{2cm}
+\usepackage[colorinlistoftodos,prependcaption]{todonotes} %,textsize=tiny
+\usepackage{xargs}  % Use more than one optional parameter in new command
+\newcommandx{\draft}[2][1=]{\todo[linecolor=ForestGreen,backgroundcolor=ForestGreen!25,bordercolor=ForestGreen,inline,caption={},#1]{#2}}
+\newcommandx{\exactcopy}[2][1=]{\todo[linecolor=darkorange,backgroundcolor=darkorange!25,bordercolor=darkorange!50,inline,#1,noprepend,caption={}]{\small #2}}
+
+
+ 
+% marks
+\usepackage{amssymb}
+\newcommand{\bluecheck}{{\color{blue}\checkmark}}
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\redmark}{{\color{red}\ding{55}}}%
+
+%abbreviations and math
+\DeclareMathOperator*{\argmax}{argmax} % thin space, limits underneath in displays
+\usepackage{mathtools}
+\DeclareMathOperator{\Prob}{\mathbb{P}}
+\DeclareMathOperator{\Exp}{\mathbb{E}}
+\DeclareMathOperator{\Var}{\mathbb{V}}
+\DeclareMathOperator{\Cov}{\mathbb{C}}
+\DeclareMathOperator{\Ber}{Ber}
+\DeclareMathOperator*{\esssup}{ess\,sup}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+% For pseudo algorithms
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+\SetKwComment{Comment}{$\triangleright$\ }{}
+\newcommand\mycommfont[1]{\footnotesize\ttfamily\textcolor{blue}{#1}}
+\SetCommentSty{mycommfont}
+
+\newcommand*{\xml}[1]{\texttt{<#1>}}
+\newcommand*{\xmlend}[1]{\texttt{</#1>}}
+
+
+
+\usepackage{arydshln} %dotted lines
+\setlength\dashlinedash{0.2pt}
+\setlength\dashlinegap{1.5pt}
+\setlength\arrayrulewidth{0.3pt}
+
+
+
+% PUT ANYTHING BEFORE THIS except hyperref and cleverref
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,citecolor=cvprblue]{hyperref}
+
+
+% Support for easy cross-referencing
+\usepackage[nameinlink,capitalize,noabbrev]{cleveref}
+\crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Tab.}{Tabs.}

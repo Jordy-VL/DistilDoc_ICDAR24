@@ -1,14 +1,777 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.21 of 2022/01/12
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
 
-\title{DistilDoc_ICDAR24}
-\author{Jordy Van Landeghem}
-\date{January 2024}
+\usepackage{graphicx} % Required for inserting images
 
 \begin{document}
 
+% \onecolumn
+% \setcounter{tocdepth}{5}
+% \tableofcontents
+
+% \clearpage
+% \setcounter{page}{1}
+% \twocolumn
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+
+%"DistilDoc: Accelerating Visually-Rich Document Understanding using Knowledge Distillation"
+
+\title{\texttt{DistilDoc}: Knowledge Distillation for Visually-Rich Document Applications} %or tasks?
+%DistilDoc: What can Knowledge Distillation do for Visual Documents Representations?
+
+\newcommand{\superaffil}[2]{\textsuperscript{#1}\,#2}
+
+\author{
+  \small Jordy Van Landeghem\superaffil{1,2}\and
+  \small Subhajit Maity \superaffil{}\and
+  \small Ayan Banerjee\superaffil{3}\and
+  \small Matthew Blaschko\superaffil{1}\and
+  \small Sien Moens\superaffil{1}\and
+  \small Josep Llados\superaffil{3}\and
+  \small Sanket Biswas\superaffil{3}\and
+  \and
+  \footnotesize{
+    \textsuperscript{1}KU Leuven
+    \quad
+    \textsuperscript{2}Contract.fit
+    \quad
+    \textsuperscript{3}Computer Vision Center, Universitat Autònoma de Barcelona}
+}
+
 \maketitle
 
-\section{Introduction}
 
+%%%%%%%%% BODY TEXT
+\section{Introduction}
+\label{sec:intro}
+
+Visually-rich Document Understanding (DU) has attracted increasing interest over the last few years.
+It involves multiple tasks such as document image classification (DIC) ~\cite{kang2014convolutional, harley2015evaluation, jain2019multimodal, liu2021document}, key information extraction (KIE)~\cite{liao2023doctr,luo2023geolayoutlm, simsa2023docile, jaume2019funsd, stanislawek2021kleister}, document layout analysis (DLA)~\cite{binmakhashen2019document, pfitzmann2022doclaynet, da2023vision, zhong2019publaynet, biswas2021beyond} and document visual question answering (VQA)~\cite{mathew2021docvqa, ding2022v, mathew2022infographicvqa, tito2021icdar}.
+Current state-of-the-art (SOTA) DU models~\cite{huang2022layoutlmv3,gu2021unidoc} solve the task by using modern OCR engines to read the text and then combine them with spatial features to predict the page layout and structure. However, these multimodal architectures come with the following drawbacks: 1) They rely primarily on Large Language Models (LLMs) \cite{zhao2023survey} % (\eg BERT~\cite{devlin2018bert} or GPT~\cite{brown2020language}) 
+pretrained on millions of samples which depend more on OCR text quality than visual features/document structure 2) can be computationally heavier due to the need to process and fuse information from different modalities 3) may perform poorly in domains with poor OCR results or on low-resource languages.
+
+Therefore, this work focuses on single-modality, vision-only architectures that can be fine-tuned for handling VRDs in tasks involving understanding visual-layout semantics such as tables, titles, paragraphs, figures, \etc. \\
+DLA is a useful preliminary step in a document processing workflow~\cite{binmakhashen2019document, da2023vision}, holding the key to enhancing practical downstream DU tasks such as DIC, KIE, and VQA. DLA can impart \textit{logical layout} structure, beyond \textit{geometric layout} from OCR \cite{haralick1994document}, and structured context to the document, to enable more accurate content extraction and interpretation. A recent DU competition~\cite{VanLandeghem2023icdar} has pleaded to bridge the gap between DLA and DocVQA by introducing layout-navigating or multi-region questions.
+
+%for given tasks, it might be sensical to focus on a specific modality-only
+To handle the computational demand of modality/task-specific models, knowledge distillation (KD) \cite{ba2014deep,hinton2015distilling,romero2014fitnets,gou2021knowledge} can prove an effective approach to obtain efficient modules for later re-use in enriching LLM document inputs. Teacher model compression has the potential to make student models that improve over direct fine-tuning, also making them practical for deployment with resource-constrained devices or for faster real-time inference.
+The field of Document AI ~\cite{cui2021document} is engaged with representing and understanding VRDs, but thus far has not explored KD-based model compression for improved efficiency and uncertainty estimation \cite{galil2023can}.
+
+This work investigates the potential of enriching VRDs with logical layout structure derived from effective DLA model compression using KD methods to practically and efficiently improve downstream DU applications.
+The nature of the (document) dataset has a major impact on the KD process \cite{stanton2021does}, which required motivated choices (regarding dataset usage \cite{pfitzmann2022doclaynet,
+    antonacopoulos2009realistic,
+    harley2015evaluation}, architectures, weight initialization \cite{li2022dit}, KD methods~\cite{SimKD, he2021distilling, chen2021distilling, zhang2020distilling, hsieh2023distilling,hinton2015distilling}, evaluation, downstream procedure \cite{wang2023layout}, \etc) in designing our novel experimental methodology of KD benchmarking for DU tasks (DIC, DLA). This allows us to investigate aspects affecting teacher-student knowledge/capacity/initialization gaps.
+
+\noindent The key contributions of the paper are twofold:
+\begin{enumerate}
+    [label=\Roman*.,leftmargin=2\parindent]
+    \item  We are the first to design, apply, and open-source an experimental methodology for comprehensively benchmarking KD-based model compression on DU tasks involving VRDs (DIC and DLA).
+    \item  We design a novel evaluation procedure based on the downstream task of zero-shot layout-aware DocVQA to quantify the robustness of distilled DLA models.
+\end{enumerate}
+
+\noindent Nevertheless, our key contributions go beyond mere KD-based compression benchmarking, promoting logical layout analysis over geometric layout to enhance the generalization of DU models toward unseen documents with diverse and complex layouts, as demonstrated in \cref{fig:new-hero}.
+
+\section{Related Work}
+
+\sbs{\paragraph{Efficiency and Model Compression}
+
+    Efficiency through model compression is gaining relevance with the increasing parameter size and complexity of models such as LLMs \cite{zhu2023survey}. Although KD is a prominent technique for model compression, several alternative approaches are worth mentioning.
+    \textit{Quantization} has been recently re-discovered in the context of LLMs with LoRA~\cite{hu2021lora} and Q-LoRA~\cite{dettmers2023qlora} that achieves substantial model compression with minimal accuracy degradation. Advances have been made also in vision-and-language~\cite{cao2017deep, yuan2020central} and more recently for vision transformer (ViT) training~\cite{li2023vit}. However, its effectiveness also depends on some key factors, including the model architecture, data type, bit-width, and the training recipes employed. In this direction, \textit{neural architecture search} (NAS) became an important field of study~\cite{cai2018efficient, liu2018progressive, liu2017hierarchical, pham2018efficient}. Popular alternatives include \textit{model weight pruning}~\cite{zhu2017prune, liu2018rethinking, gao2021network} that benefits strongly from
+    %from requires to be used judiciously and in conjunction 
+    joint usage with other efficiency and model compression techniques;  \textit{adaptive inference} with multi-exit architectures~\cite{xing2020early, zhou2020bert}, which are promising yet highly dependent on early exit network design and uncertainty estimation.
+    %impactful lately, especially in adaptive inference stage, where the model could decide whether to continue processing the input or stop early based on the confidence of the model predictions. However, design choices of the network remain the key for getting the best out of this strategy. 
+    KD-based training ~\cite{phuong2019distillation} complements the aforementioned techniques, leading to potentially more accurate model exits and pruning. Moreover, KD strategies involve overall simpler design choices, depending mostly on the availability of a large teacher model trained on domain data of interest. Therefore, we prioritize KD-based model compression and efficiency for practical DU applications.
+
+    %In this context, \textit{knowledge distillation} strategies have a much simpler design choice with the availability of a large teacher model and could help in better interpretability on how distilled predictions (student) could match the assigned softer targets (teacher). In this work, we investigated the utility of KD strategies towards achieving model compression and efficiency for practical DU applications.
+
+    % Compress a large model for efficient deployment.
+    % Transfer knowledge from a pretrained model to a smaller one.
+    % Improve generalization on small datasets.
+    % Create an ensemble of models from multiple teachers.
+    % Continuously update a model while retaining past knowledge.
+    % Simplify a complex model for better interpretability.
+    % These alternatives encompass various strategies, such as efficient architecture design, early exits, quantization, neural architecture search~\cite{cai2018efficient, liu2018progressive, liu2017hierarchical, pham2018efficient}, model weight pruning, and hardware-software co-design. 
+}
+% 
+\paragraph{Knowledge Distillation}
+
+
+KD strategies can be categorized into three main categories: \textit{response-based} KD~\cite{ba2014deep, hinton2015distilling, aditya2019spatial, mirzadeh2020improved, zhao2022decoupled, yang2023knowledge} seeks to match the final layer predictions of the teacher model; \textit{feature-based} KD~\cite{romero2014fitnets, ahn2019variational, heo2019knowledge,komodakis2017paying, chen2021cross, chen2021distilling} aims to mimic features extracted from intermediate hidden layers of the deep network and \textit{relation-based} KD~\cite{yim2017gift, park2019relational, tian2019contrastive, passalis2020heterogeneous} which exploits the relations between different layers or sampled data points. However, the latter approach is more geared toward pixel-based semantic segmentation tasks. While feature-based KD is more versatile, it is more expensive and harder to implement than soft teacher predictions.
+While offline methods~\cite{hinton2015distilling, romero2014fitnets} consider an existing frozen teacher model, online methods~\cite{zhang2018deep, chen2020online} update both student and teacher networks jointly. Self-distillation~\cite{bagherinezhad2018label, zhang2019your} represents a special case of online KD, which employs the same network as both the teacher and student, progressively outperforming the network's performance, albeit disregarding the aim of efficiency.
+
+Our work's scope will be offline KD schemes% (vs. online and self-distillation)
+, with a single converged teacher (vs. intermediate checkpoints \cite{wang2022efficient} or ensembles \cite{you2017learning}), single modality inputs (vision only), with three different feature extraction backbones (ResNets, ViT and a self-supervised pretrained document foundation model DiT~\cite{li2022dit}). Our study seeks to extend the empirical utility of KD to popular DU tasks
+(DIC \& DLA) with a versatile benchmarking framework to ensure future compatibility, fostering KD-based DU model compression research.
+
+
+\paragraph{Practical and Efficient Document Understanding}
+%Practical and efficient DU: logical layout to the rescue? 
+\sbs{ Recent efforts to represent layout and document structure have gained substantial recognition, particularly with the incorporation of structural information into LLMs. The LayoutLM family~\cite{huang2022layoutlmv3, xu2020layoutlm, xu2020layoutlmv2} and GeoLayoutLM~\cite{luo2023geolayoutlm} laid the foundation of using 2D positional information of text (word blocks) tokens obtained from OCR as a \textit{geometric layout} representation for the input. Recent work \cite{shen2022vila} has further enhanced this 2D representation by incorporating text lines or text blocks as layout groups inside the OCR text tokens. \cite{wang2023layout} further experiments with structure-preserving OCR, that uses appropriate spaces and line breaks as an LLM input, thereby improving the ability to capture layout and structural cues for zero-shot DocVQA~\cite{mathew2021docvqa, mathew2022infographicvqa} tasks.
+\cite{li2021selfdoc,gu2021unidoc} seek to represent layout as region-level proposal features, representing \textit{logical layout} elements like title, paragraph, figure, tables, \etc) as in the DLA task. To further study the utility of logical layout representations, \cite{wu2022region} addresses asking questions conditioned inside a specific region of a page, improving upon the design of DocVQA that provides too many in-line questions ($>$80\%). More recently, PDFTriage~\cite{saad2023pdftriage} generates a structured metadata representation of born-digital documents, extracting both geometric and logical layout elements like section text, figure captions, headers, and tables for a more precise QA approach.  DUDE~\cite{VanLandeghem2023dude} offers a testing bed for DocVQA on multipage, multi-type documents with varying layouts, including questions conditioned on layout navigation, \eg `\textsl{Which pages have tables?}'.
+
+    Our explorations focus on making the most of the logical layout features obtained from the multi-domain DLA benchmark, DocLayNet~\cite{pfitzmann2022doclaynet}. We build upon the aforementioned advancements and explore how incorporating document structure can enhance the performance of downstream task models, aligning with the trend of enriching LLMs with rich-text prompting and layout-aware representations.}
+
+
+
+% While the standard interface for many models is text-in and text-out, recent developments have focused on enriching textual prompts to better capture layout and structural cues. Notable contributions in this direction include the LayoutLM series, SelfDoc, Hi-VILA, and Latin-Prompt, which have sought to connect natural language understanding and document layout analysis. In our study, we build upon these advancements and explore how incorporating structural information can enhance the performance of DIC and DLA models, aligning with the broader trend of enriching language models with rich-text prompting and layout-aware representations.}
+
+% \draft{
+%   \begin{itemize}
+%     \item Practical DU
+%           \begin{itemize}
+%             \item Background on document image classification practices (approaches, SOTA; difference between geometric (OCR) and logical layout) 
+%             \item Background on document layout analysis practices (approaches, SOTA, downstream)
+%             \item The two core tasks tested with KD methods are classification and recognition. Alternative tasks are generation, ranking or regression; which are not considered in this work.
+%           \end{itemize}
+%   \end{itemize}
+% }
+
+% \jvl{
+% \draft{
+% our exploration only treats logical layout analysis based on DocLayNet (richest document structure scheme available), yet we believe in the future -> DLA vs. document object detection ; split is arbitrary? 
+
+
+% logical (header-title-body-footer lineitem figure table) versus geometric (text block) layout analysis (Haralick, 1994). 
+
+% 2D position embeddings in LayoutLM / geoLayoutLM incorporate document structure into representation learning
+
+% Selfdoc, unidoc - region-base
+
+% Hi-Vila = geometric (OCR blocks)
+
+% LATIN-prompt puts structure-preserving OCR in the foreground again (this is good LLM input yo) - still geometric only
+
+% PDFtriage: if native then use whatever structure is embedded in the pdf (geometric - logical - metadata attributes); no solution for scanned, hence more rich document structure annotations needed. 
+
+% RegionDocVQA: \cite{wu2022region} asking questions conditioned inside a specific region; criticism on docvqa as a dataset with too many in-line or in-question QA pairs. (give examples) 
+% }}
+
+
+%https://community.openai.com/t/support-for-rich-text-format-prompts-in-chatgpt/388486
+%https://dl-acm-org.kuleuven.e-bronnen.be/doi/abs/10.1145/3503161.3548172?casa_token=4d18HlasPA8AAAAA%3AYYM7C_nZkvIJsN-py1H4IffQk5hfJL8ZawIMhXRzUMK8uXYRfzcAD-U0ssyCfw949b3OeFXf_JFw 
+%difference between in-line and in-region questions 
+
+\jvl{
+    \section{Experimental Setup}\label{sec:exps}
+
+    \begin{figure*}[t]
+        \centering
+        \includegraphics[width=\textwidth]{images/KDD/distildoc_v6.pdf}
+        \caption{\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications.}}
+        \label{fig:backup-hero}
+    \end{figure*}
+
+    This Section documents the experimental methodology established in this work (also visualized in \cref{fig:backup-hero}), including datasets, architectures \& backbones for teacher and student models, KD methods, and evaluation metrics for the tasks and distillation effectiveness.
+    The goal is to provide a framework for future research on KD for DU tasks and allow pinpoint comparisons on KD aspects such as teacher-student knowledge and capacity gap, teacher-pretraining, student network initialization, \etc
+}
+
+\begin{table}[ht]
+    \centering
+    \caption{Dataset usage for DIC, DLA, and downstream tasks.
+        Symbols: P = pretraining, DP = document pretraining, T = teacher training, S = student training, * = subsampling, E = teacher/student evaluation, D: downstream evaluation}
+    \begin{tabular}{|l|l|c|c|c|}
+        \hline
+        \textbf{Dataset}                            & \textbf{Task} & \textbf{Usage} & \textbf{Size} & \textbf{\# Cls} \\ \hline
+        ImageNet \cite{deng2009imagenet}            & DIC           & P              & 1.28M         & 1000            \\ \hline
+        IIT-CDIP \cite{lewis2006building}           & DIC           & DP,T,S         & 11M           & /               \\ \hline
+        \tobacco \cite{kumar2013unsupervised}       & DIC           & T,S,E          & 3482          & 10              \\ \hline
+        \rvl \cite{harley2015evaluation}            & DIC           & DP,T,E         & 400K          & 12              \\ \hline
+        %MSCOCO \cite{lin2014microsoft}               & DLA           & (P)            & 133K          & 80              \\ \hline
+        %PubLayNet \cite{zhong2019publaynet}          & DLA           & (DP,T,S)       & 360K          & 5               \\ \hline
+        \prima \cite{antonacopoulos2009realistic}   & DLA           & T,S,E          & 400           & 6               \\ \hline
+        \doclaynet \cite{pfitzmann2022doclaynet}    & DLA           & T,S,E          & 80.8K         & 11              \\ \hline \hline
+        RVL-CDIP-N \cite{larson2022evaluating}      & DIC           & D              & 1K            & 16              \\ \hline
+        SP-DocVQA \cite{tito2021icdar}              & VQA           & D              & 12.8K         & 50K             \\ \hline
+        Infographic \cite{mathew2022infographicvqa} & VQA           & D              & 5.5K          & 30K             \\ \hline
+        \hline
+    \end{tabular}
+    \label{tab:DKD-datasets}
+\end{table}
+
+
+
+\subsection{Datasets}\label{sec:datasets}
+
+\jvl{
+    \cref{tab:DKD-datasets} lists all datasets used (in)directly for the experiments. As there is no existing methodology for KD experimentation on the tasks involved, we motivate the design choices:
+
+    \textbf{DIC} We benchmark results on both \tobacco{} (original train-val-test splits 800-200-2482) and \rvl.
+    The originally large training size of \rvl{} hinders experimentation (long iteration cycles), which is why we create a subsampled student training set, \rvlone, by randomly selecting 1K images per class.
+    By evaluating the full \rvl{} test set, we provide a fair evaluation of the usefulness of KD methods, while avoiding the cumbersomeness of student fine-tuning on such a large dataset.
+
+While \rvl{} is the de facto standard for measuring performance on the task of document classification, the literature \cite{larson2023labelnoise,VanLandeghem2024bdpc} has reported several undesirable characteristics such as (near-)duplicates causing substantial overlap between train and test distributions.
+    % Without a better alternative existing, we take these points into account when experimenting with KD methods. 
+    We complement independently and identically distributed (\textit{i.i.d.}) test set evaluation with benchmarking on RVL-CDIP-N \cite{larson2022evaluating}, which is a covariate shift dataset allowing us to evaluate the robustness of KD methods to domain shift, which is a common problem in real-world applications.
+}
+
+\jvl{
+    \noindent\textbf{DLA} We benchmark results on \doclaynet{} (reporting evaluation on validation set following common practice) and \prima{}. The former is a large-scale human-annotated dataset with 81K images and 11 categories of logical layout elements, while the latter is a smaller dataset with 400 images and 6 classes. \doclaynet{} contains a wide layout variability with six diverse document types (patents, scientific, legal, reports, tenders) in English. They have been hand-annotated by trained experts, making it the gold standard for DLA. Alternatively, Publaynet~\cite{zhong2019publaynet} or MS-COCO~\cite{lin2014microsoft} benchmarks have been used in pretraining DLA models. However, the former lacks diversity as it only contains documents from the scientific domain while the latter is a more common object detection benchmark for natural scenes.
+}
+
+\jvl{
+    We consider a mirrored data setup for both tasks, with one larger benchmark dataset (\rvl, \doclaynet) and a smaller, easier dataset (\tobacco, \prima).
+    This allows us to compare KD efficacy with more or less accurate teachers over tasks. %getting more insight into teacher-student knowledge gap with in low/high-accuracy regimes
+}
+
+\jvl{
+    \subsection{Architectures and Backbones}\label{sec:architectures}
+
+    We evaluated three backbone architectures, representing different approaches to the tasks of DIC and DLA.
+
+    \paragraph{Backbones}
+    \noindent Residual Network (\textit{ResNet}) \cite{he2016deep}: A supervised pretrained CNN-based architecture that is a staple in image recognition.
+
+    \noindent Vision Transformer (\textit{ViT}) \cite{dosovitskiy2020image}: A supervised pretrained Transformer-based architecture that is effective for a variety of CV tasks.
+
+    \noindent Document Image Transformer (\textit{DiT}) \cite{li2022dit}: A self-supervised pretrained architecture specifically designed for DU tasks, as it was pretrained on 11M document images from IIT-CDIP with a Masked Image Modeling objective, as inspired by BeiT \cite{bao2022beit}.
+
+    Specific to DLA, we use the Mask R-CNN  \cite{he2017mask} meta-architecture for instance segmentation with two different backbones, i) classic ResNets and ii) ViT, with the latter more challenging to integrate \cite{li2021benchmarking}.
+}
+
+\jvl{
+    Historically, CNNs have been more popular for DLA due to their accuracy, speed, and multiple optimizations built into the meta-architectures (involving a backbone, neck, and head). However, recent work is pointing to the potential of ViT as plain (non-hierarchical) object detectors \cite{li2022exploring}. Compared to Transformers, CNNs have strong inductive biases of translation equivariance and locality, a fundamental difference that is less explored in a KD context \cite{bhojanapalli2021understanding}.
+}
+
+\jvl{
+    \paragraph{Network Architecture and Initialization}
+
+    Document images are very different from natural images, yet most available vision backbones of different sizes are pretrained on the latter, except for DiT. Nevertheless, ViTs seem to struggle to learn a function when starting from random initialization, both as teachers and student networks. Therefore, we will use ImageNet pretrained checkpoints for all models considered, even for student network initialization.
+
+    % \draft{
+    %   Mainly describe about difference in pretraining data (natural images, document images), pretraining fashion (supervised or self-supervised).
+    % }
+}
+
+% \noindent\textit{SwinTransformer} \cite{liu2022swin}: An architectural extension over ViT that has been adapted toward instance segmentation for less complexity at better long-range context modeling.
+% Swinformer's Shifted Window Attention:
+%    - Intuition: Divides the input into non-overlapping windows and applies self-attention within each window. The windows are then shifted, and the process is repeated.
+
+
+\jvl{
+    \paragraph{Teacher Models}
+
+    While there are many model variants with different capacities for each of the backbones (\cref{tab:vistrans}), we opt for the Base variant for Transformers, which arguably is most common. We consider ResNet-101 as it has the attractive property of having similar hidden layers' output dimensionality as the next smaller variant, ResNet-50. %interesting for feature-based
+
+    The comparison of ViT-B and DiT-B allows us to evaluate the effects of different pretraining schemes (supervised, self-supervised) and how this affects knowledge transfer.
+    %, as well as the effects of teacher-finetuning.
+    %and intermediate checkpointing \cite{wang2022efficient}.
+
+
+
+    \paragraph{Student Models}
+
+    For DIC, we consider ViT-small and ViT-tiny, as well as a CNN-based architecture (ResNet-50), whereas, for DLA, we consider MaskRCNN with a Resnet-50 backbone and a ViT-tiny backbone. Due to the computational demand of training instance segmentation models, we only consider the ViT-tiny backbone for the student model, therefore not making it possible to analyze KD methods for an increasing teacher-student capacity gap. While it would have made an interesting comparison, DiT has not been released in a smaller variant than DiT-B, and given the computational demand of pretraining DiT on the entire IIT-CDIP dataset containing 42 million document images, we did not consider it for student training. One might regard the knowledge transfer of DiT-B to a smaller ViT-(S/T) as potentially resulting in DiT-(S/T), yet the ImageNet or random initialization of the student network differs substantially from that of the self-supervised DiT weight space.   % TODO: can we measure this somehow, even for base size with TSNE on some images?
+}
+
+
+\subsection{KD Methods}\label{sec:KD-methods}
+
+\jvl{The basic approach of knowledge distillation consists of transferring 'knowledge' from a cumbersome teacher model $f^t$ to a lightweight student model $f^s$, where $f: \mathcal{X} \to \Delta^{\mathcal{Y}}$ is a function mapping input data $\mathcal{X}$ and outputting a conditional probability distribution $P(y'|x)$ over output labels $y' \in \mathcal{Y} = [K]$ for $K$ classes \citep{pistone1995infinite}. The top-1 class prediction is $\hat{y} = \argmax_{y'\in{\mathcal{Y}}}[f(X)]_y'$, with $\hat{p}= \max_{y'}[f(X)]_y'$ the posterior probability. For convenience, $[\tilde{f}(x)]_k$ denotes the $k$-th element of the logits vector $\tilde{f}(x) \in \mathbb{R}^K$, which when normalized with softmax $\displaystyle f(x) = \sigma\left(\tilde{f}(x)\right) = \frac{{\exp(\tilde{f}(x) / \tau)}}{{\sum_{k=1}^{K} \exp([\tilde{f}(x)]_k / \tau)}}$.
+Let each function $f$ be parameterized by $\theta$ holding all trainable parameters of the function, separable into a variable $L$ layers, where $f_l(x)$ denotes the $l$-th layer output, \eg the penultimate layer output $f_{L-1}(x)$.
+}
+
+% Let $\Delta^{\mathcal{Y}}:= \{v \in \mathbb{R}^{|\mathcal{Y}|}_{\geq 0} : \Vert v \Vert_1 = 1 \}$ be a probability simplex of size $|\mathcal{Y}|-1$, where each vertex represents a mutually-exclusive label and each point has an associated probability vector $v$ \citep{pistone1995infinite}
+%σ denotes the softmax function 
+
+% $X$ and $Y$ denote the input data and output labels, respectively, and $x_i$ and $y_i$ denote the $i$-th sample in the dataset. The teacher model is trained on the dataset $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N$ with $N$ samples, and the student model is trained on the same dataset $\mathcal{D}$ or a subset thereof. The goal is to minimize the student loss $\mathcal{L}_s$ while leveraging the teacher's knowledge. The student loss is typically a supervised loss, \eg cross-entropy loss, $\mathcal{L}_{\mathrm{CE}}(Y, f(X;\theta_L)$, where $\theta_L$ holds all trainable parameters until the $L$-th layer. 
+
+% minimizing a loss function (\eg cross-entropy) over the last layer output (logits), $\mathcal{L}_{\mathrm{CE}}(Y, f(X;\theta_L)$, where $\theta_L$ holds all trainable parameters until the $L$-th layer. 
+
+
+\jvl{
+    While there exists a wealth of ever-growing KD methods, we have carefully chosen a combination of simplistic methods mimicking the basic principles of KD (i, iv), more advanced KD methods that target specific improvements such as penalizing the non-target class logits (ii), or distilling the knowledge of intermediate layers (iv), and methods that take a step back on established KD practices by optimizing mean squared error (MSE) between teacher-student logits or reusing the teacher classifier (ii, vi).
+
+    %common notation
+    %Keeping in mind that this work represents the first benchmarking and analysis of KD methods in DU tasks, we 
+}
+
+Every method will be explained with loss functions, additional hyperparameters, and training parameters.
+%To benchmark the efficacy, we consider the following KD methods:
+\noindent(i) \textbf{Vanilla KD}~\cite{hinton2015distilling} optimizes a linear combination of hard-target student cross-entropy (CE) loss and Kullback Leibler (KL) divergence loss with soft-target teacher predictions, including loss KD hyperparameters $\alpha \in [0,1]$ and $\tau > 1$, which give more weight to student loss and controls the softness of teacher logits, respectively. %the higher, the softer
+\begin{equation*}
+    \mathcal{L}_{\mathrm{KD}}= \alpha \underbrace{\mathcal{L}_{\mathrm{CE}}\left(y, \hat{y}^s\right)}_{\tau=1}+(1-\alpha)\underbrace{\tau^2 \mathcal{L}_{\mathrm{KL}}\left(f^t(x), f^s(x)\right)}_{\tau>1}
+\end{equation*}
+
+
+\noindent(ii) \textbf{MSE} loss between teacher-student logit vectors enables direct logit-level matching \cite{kim2021comparing}
+\begin{equation*}
+    \mathcal{L}_{\mathrm{MSE}}=\left\|\tilde{f}^{s}\left(x\right)-\tilde{f}^{t}\left(x\right)\right\|_{2}^{2}
+\end{equation*}
+
+\noindent(iii) \textbf{NKD} Normalized KD loss ~\cite{yang2023knowledge} decouples vanilla KD into a normalized (indicated $\mathcal{N}$) combination of the target ($c \in \mathcal{Y}$) loss and the non-target loss in CE form, %($\mathcal{L}_{\mathrm{CE}}  = -\sum_{k=1}^{K} \mathbb{I}\left(c=k\right) \cdot \left([\tilde{f}(X)]_k\right)$)
+where $\gamma \in [0,1]$ is a trade-off and $\tau$ is the temperature parameter.
+
+\begin{equation*}
+    \resizebox{.95\columnwidth}{!}{$
+        \mathcal{L}_{\mathrm{NKD}}= \underbrace{[f^t(x)]_c [\tilde{f}^s(x)]_c}_{\text{target}}-\gamma \cdot \tau^2 \cdot \underbrace{\sum_{k \neq c}^K \mathcal{N}\left([f^t(x)]_k^\tau\right) \left(\mathcal{N}\left(\tilde{f}^s(x)^\tau\right)\right)}_{\text{non-target}}
+    $}
+\end{equation*}
+
+\noindent(iv) \textbf{FitNet} \cite{romero2014fitnets} enables feature-based KD by minimizing the Euclidean distance between the intermediate feature maps of the teacher and student networks (i.e., MSE loss). A trainable projector $\mathcal{P}(\cdot)$ (\eg a linear projection layer) is required if the dimensionality of the hint layer(s) $h \in [1, L+1]$ outputs does not correspond to that of the student
+%to match the dimensions; insertion index $h$
+. There are no hyperparameters, except for projector design and where to place hint layers in the teacher network.
+
+\noindent(v) \textbf{ReviewKD} \cite{chen2021distilling} uses multi-stage information (multiple layers) of the teacher to supervise one student layer. The knowledge review mechanism is too complex to cover here as it involves multiple modules (residual learning, attention-based fusion projector, and a hierarchical context loss). This work claimed the first exploration of KD for instance segmentation, which is why we include it only for DLA.
+% TODO: or if someone wants to try... JVL: I think it is too ad-hoc and the paper is written poorly with many obfuscating terms to indicate complexity
+% is a trainable projector $f^t_P$ (\eg a linear projection layer) that maps the teacher's intermediate feature maps to the student's intermediate feature maps. The loss function is a combination of the CE loss and the MSE loss between the student's intermediate feature maps and the projected teacher's intermediate feature maps. The hyperparameter $\lambda$ controls the trade-off between the two losses. 
+
+\noindent(vi) \textbf{SimKD}~\cite{chen2022knowledge} is a hybrid KD method that combines the advantages of response-based and feature-based KD. On the one hand, it reuses the pretrained (frozen) teacher classifier for student inference ($f^t_{L}(\mathcal{P}(f^s_{L-1}(x))$), and on the other hand, it adopts MSE for feature alignment (following a projector) of the penultimate layer feature-representations.
+\begin{equation*}
+    \mathcal{L}_{\mathrm{SimKD}}= \mathcal{L}_{\mathrm{MSE }}\left(\mathcal{P}\left(f^{s}_{L-1}\left(x\right)\right), f^{t}_{L-1}\left(x\right)\right)
+\end{equation*}
+
+While the projector can safely be discarded for (iv,v) to obtain cost-free student inference, SimKD requires both the trained projector and teacher classifier to be used (and stored) for student inference.
+SimKD originally proposed a CNN-based projector between teacher and student feature maps (assuming $C$(hannels) x $H$(eight) x $W$(idth) inputs).
+For compatibility with ViT-based architectures, we contribute a novel variant of SimKD, which uses a linear projection layer on the [CLS] token at the penultimate layer. Alternatively, we draw upon \cite[Theorem 1]{cordonnier2019relationship} that a multi-head self-attention layer can simulate a convolutional layer, subsequently reshaping the penultimate hidden layer output (ignoring [CLS] pooling) to ($C$ x $W$ x $H$), where $C$ is the hidden size (\eg 197(-1) for ViT-B), and $W,H$ are equal to the number of patches (\eg 14 for ViT-B with patch size 16 and image sizes 224x224), finally applying the original CNN projector to obtain the projected feature maps. %kernel size 3 followed by kernel size 1; following a bottleneck design
+
+
+\jvl{
+    \paragraph{Task considerations}
+    The number of KD methods considered between the tasks differs, as some methods were not designed for use in a meta-architecture like Mask R-CNN.
+    Response-based methods using logits are not capable of providing knowledge for object localization (\eg region proposal network head), making feature mimicking of vital importance.
+    Moreover, the performance of instance segmentation highly depends on the quality of deep features to locate interested objects \cite{zhao2022decoupled,yang2023knowledge}, which is why we only consider feature-based KD methods for DLA (v, vi). When deciding upon KD methods to include, the literature reported ReviewKD as the feature-based SOTA, NKD as the response-based SOTA, and SimKD as the hybrid SOTA on image classification (CIFAR-100). %for resnet 32x4 -> resnet 8x4 SimKD (78.08), ReviewKD (75.63), NKD (76.35)
+}
+
+\jvl{
+    \subsection{Evaluation}
+
+    \paragraph{Metrics}
+    Predictive performance evaluation for DIC follows standard practice with accuracy, whereas we forego the F1 score as the classes are balanced.
+    For DLA, we use the standard metrics of Mean average precision (MAP) @ intersection over union (IOU) [0.50:0.95] of bounding boxes.
+
+    Efficiency evaluation considers the combination of parameter size and FLOPS (floating point operations) to be representative enough to compare distilled models.
+
+Following calls in the DU literature \cite{VanLandeghem2023dude} to establish calibration and confidence ranking as defaults to the evaluation methodology, we include Expected Calibration Error (\ECE) \cite{niculescu2005predicting,naeini2015obtaining,guo2017calibration} to evaluate top-1 prediction miscalibration and Area-Under-Risk-Coverage-Curve (\AURC) \cite{geifman2017selective,jaeger2023a} to measure selective (\% of test set) accuracy.
+    %we did not attempt to measure this for DLA as these measures were not defined for instance segmentation.
+    %Prior work \cite{munirtowards} did introduce the strategy of thresholding continuous quality scores (in the case of IoU larger than $\tau$) to be able to estimate \ECE. 
+}
+
+\jvl{
+    \paragraph{Covariate shift DIC-KD evaluation}
+
+    To evaluate the robustness of distilled models, we consider evaluating the impact of domain shift on the downstream task of DIC. Luckily, there exists a dataset similar to \rvl{} in terms of document types and classes, yet different in terms of document sources and label distribution. This dataset is called RVL-CDIP-N \cite{larson2022evaluating}, and we will use it to evaluate the robustness of distilled models.
+
+}
+
+\subsection{DLA-enriched LLM prompting}\label{sec:supp-procedure-prompt}
+
+\jvl{
+    \paragraph{Downstream DLA-KD evaluation}
+
+    % \draft{
+    %   just figured out that it makes sense to:
+    %   1) evaluate distilled CLF models on RVL-CDIP-N as it is a domain shift (yet no label shift)
+    %   2) evaluated distilled DLA models on downstream docvqa as it also constitutes a domain shift (with label shift, as there is no other dataset that is similarly labeled as doclaynet, so this is the only resort we have)
+    %   and 1) is more interesting than DLA overlayed CLF, as this tests again the distillation of DLA models, more than the distillation of CLF models
+    %    We also compare downstream performance on DIC when we overlay the image with differently colored visual bounding boxes per DLA type. #full circle
+    % }
+
+    An important objective of this work is to demonstrate the usefulness of DLA predictions in downstream VRD tasks. As SOTA DLA models are often as cumbersome (parameter size, GFLOPS) as the downstream models, this motivates the need for KD to obtain more efficient DLA predictors that could be used to enrich document inputs with logical layout information.
+
+While we focus on visual-only document inputs in benchmarking KD, we take the opportunity to benchmark DLA as part of a zero-shot DocVQA task setup with text-only LLMs \cite{wang2023layout}, which can benefit from additional layout information when answering questions that appear in certain logical elements ({\small\textsc'what is the first column header of Table 3', 'what is the title of the document?'}). Similarly, it could benefit to know what falls within an infographic picture or legend; which is why we benchmark on SP-DocVQA and InfographicVQA, with the latter containing more visually-rich information. As a model of choice, we have opted for \textsc{Llama-2-7b-chat} \cite{touvron2023llama} with 4-bit quantization to keep GPU memory requirements to a minimum, while still performing sufficiently reliably. Evaluation is done using \ANLS{} \cite{biten2019scene,VanLandeghem2023dude} on predicted answers vs. ground truths.
+
+    % do things here
+    The prompt design follows \cite{wang2023layout} with a task instruction and placeholders for the question and the document input, the latter depending on the prompt parameterization (see \cref{supp:task_instruction}). Possible values are \textit{plain}, single-spaced OCR tokens, \textit{space}, tokens placed heuristically with whitespaces in their approximate position, or \textit{DLA}, which adds start and end tags such as \xml{Table} and \xmlend{Title}
+    to indicate logical layout as predicted by a DLA model.
+    A pseudo-algorithm (\cref{sec:supp-procedure-prompt}) details the procedure to generate DLA-enriched prompts.
+
+    KIE is regarded as an important downstream DU task, yet we believe (as supported by \cite{he23good}) that it would benefit less from DLA, due to most information being organized as key-value pairs with only local context relevance.
+}
+
+
+
+\begin{table}[h]
+    \caption{Prompt design following \cite{wang2023layout}, with placeholders depending on parameterization of document input (\textit{plain, space, DLA}).}
+    \centering
+    \resizebox{0.8\columnwidth}{!}{%
+        \label{supp:task_instruction}
+        \begin{tabular}{cl}
+            \hline \#l & Prompt                                                                                        \\
+            \hline 1   & You are asked to answer questions asked on a document image.                                  \\
+            2          & The answers to questions are short text spans taken verbatim from the document.               \\
+            3          & This means that the answers comprise a set of contiguous text tokens present in the document. \\
+            4          & Document:                                                                                     \\
+            5          & \textcolor{red}{\{Layout Aware Document placeholder\}}                                        \\
+            6          & Question: \textcolor{blue}{\{Question placeholder\}}                                          \\
+            7          &                                                                                               \\
+            8          & Directly extract the answer to the question from the document with as few words as possible.  \\
+            9          &                                                                                               \\
+            10         & Answer:  \textcolor{green}{\{\}}                                                              \\
+            \hline
+        \end{tabular}
+    }
+\end{table}
+
+
+\begin{algorithm} %[H]
+\footnotesize
+    \caption{\small Construction of DLA-enriched prompts $\boldsymbol{p}_{\mathrm{DLA}}$}
+    \label{algo:pseudo}
+
+    \SetKw{Continue}{continue}
+    \SetKw{Break}{break}
+    \SetKw{Not}{not}
+
+    \SetKwData{Left}{left}
+    \SetKwData{Require}{\footnotesize \textbf{Require:}}
+    \SetKwData{Ensure}{\footnotesize \textbf{Ensure:}}
+
+    \SetKwFunction{DLA}{DLA}
+    \SetKwFunction{OCR}{OCR}
+    \SetKwFunction{Update}{Update}
+    \SetKwFunction{StandardizeBbox}{StandardizeBbox}
+    \SetKwFunction{InterpolateBbox}{InterpolateBbox}
+    \SetKwFunction{IntersectionOverUnion}{IntersectionOverUnion}
+    \SetKwFunction{FullyContains}{FullyContains}
+    \SetKwFunction{SortAndLabel}{SortAndLabel}
+
+
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Parameter}{Parameters}
+    \SetKwInOut{Output}{Output}
+
+    \DontPrintSemicolon % Some LaTeX compilers require \dontprintsemicolon
+
+    \KwIn{A finite set $\mathcal{D}_{test} = {\{(\mathbf{x}_{(i)}, y_{(i)})\}_{i=1}^{N}}$ of holdout data, consisting of document images $\mathbf{x}_{(i)}$ and corresponding labels $y_{(i)}$}
+    \KwOut{Tokenized DLA-enriched prompts $\boldsymbol{p}_{\mathrm{DLA}}$}
+    \Parameter{$\tau_{iou}$: IoU-threshold for layout-token boxes (default: 0.3)}
+    \Parameter{Ignore-labels: DLA labels to ignore for enrichment (default: \{'Text'\})}
+
+    %\Comment*[l]{Assume DLA model is trained and available} 
+
+    \Input{A document image $\boldsymbol{v}$}
+    \Require A trained DLA model and an OCR engine
+
+    \textbf{Feed image to DLA model to obtain labeled layout boxes} \;
+    $\left\{\left(b_j, c_j, m_j\right)\right\}_{j=1}^J \gets$ \DLA{$\boldsymbol{v}$} \tcp*{Boxes, classes, metadata}
+
+    \textbf{Feed image to OCR engine to obtain tokens and boxes} \;
+    $u = \left\{\left(w_t\right)\right\}_{t=1}^T, s = \left\{\left(x_t^1, y_t^1, x_t^2, y_t^2\right)\right\}_{t=1}^T \gets$ \OCR{$\boldsymbol{v}^\prime$} \tcp*{Tokens and token-boxes}
+
+    \textbf{Standardize layout boxes to similar xy-format} \;
+    \For{$j \gets 1$ \textbf{to} $J$} {
+        $b_j \gets$ \StandardizeBbox($b_j$) \tcp*{Standardize to xy-format}
+        \If {\OCR image dims $\neq$ \DLA image dims} {  \tcp*{Precomputed OCR (DUE) results can be reused, yet OCR images can have higher resolution}
+            \textbf{Interpolate layout boxes to token-boxes} \;
+            $b_j \gets $ \InterpolateBbox($b_j, \boldsymbol{v}, \boldsymbol{v}^\prime$)} \tcp*{Interpolate layout box to OCR image size}
+    }
+
+    \textbf{Find closest start and end token-boxes} \;
+    \Input{a set of DLA predictions $\mathrm{DLA}(\boldsymbol{v})$, a set of OCR tokens $u$, a set of OCR token-boxes $s$}
+    \Output{an updated set of OCR tokens $\hat{u}$, a set of OCR token-boxes $\hat{s}$}
+
+
+    \For{$j \gets 1$ \textbf{to} $J$} {
+        $S \gets (0, \infty)$; $E \gets (-1, \infty)$\  \tcp*{Initialize start and end with dummy index and distance values}
+        \For{$t \gets 1$ \textbf{to} $T$} { \tcp*{Multiple relaxing heuristics to find closest token-box to layout-box}
+
+            \If{$c_j \in$ Ignore-labels} {
+                \Continue
+            }
+            \If{\Not \FullyContains{$b_j, s_t$} or \IntersectionOverUnion{$b_j, s_t$} $> \tau_{iou}$} { \tcp*{Token-box fully contained within layout-box or IoU > threshold}
+                \Continue
+            }\tcp*{Minimal Laplacian distance to cornerpoint}
+            {
+                $S \gets \min(S, \left(t, \mathrm{Laplacian}(b_j, s_t)\right))$ \tcp*{Laplacian distance to top-left corner}
+                $E \gets \min(E, \left(t, \mathrm{Laplacian}(b_j, s_t)\right))$ \tcp*{Laplacian distance to bottom-right corner}
+            }
+        }
+    }
+
+    \textbf{Insert DLA labels before and after closest tokens} \;
+    \Input{The original sets of OCR tokens $u$, token-boxes $s$, and start and end indices $S$ and $E$}
+    \Output{Updated sets of OCR tokens $\hat{u}$ and token-boxes $\hat{s}$}
+
+    $C \gets 0$ \tcp*{Initialize token insertion counter}
+    $\hat{u}, \hat{s} \gets u,s$ \tcp*{Initialize to be updated OCR tokens $\hat{u}$ and token-boxes $\hat{s}$}
+    $I \gets $\SortAndLabel{S,E} \tcp*{sort start and end token together by index and add label type}
+
+    \For{$j \gets 1$ \textbf{to} $|I|$} {
+        \If{$I_j$ is a start token} {
+            $\hat{u} \gets$ insert \xml{$c_j$} at $I_j + C$ \tcp*{Insert label such as <Table> before token}
+            $\hat{s} \gets$ insert $b_j$ at $I_j + C$ \;
+            $C \gets C + 1$ \;
+        }
+        \If{$I_j$ is an end token} {
+            $\hat{u} \gets$ insert \xmlend{$c_j$} at $I_j + C + 1$ \tcp*{Insert label such as </Table> at next token}
+            $\hat{s} \gets$ insert $b_j$ at $I_j + C + 1$ \;
+            $C \gets C + 1$ \;
+        }
+    }
+    \Return{$\hat{u}, \hat{s}$} \tcp*{Tokens and token-boxes with DLA labels to be used in prompt design of \cite{wang2023layout}}
+\end{algorithm}
+
+
+\begin{table}[h]
+    \caption{Results for KD methods applied on DocLayNet \cite{pfitzmann2022doclaynet}.
+        %Efficiency metrics are indicated as (M, 1e6), (G, 1e9).
+    }
+    \label{tab:dla_kd}
+    \resizebox{\columnwidth}{!}{
+        \begin{tabular}{@{}ccccccc@{}}
+            \toprule
+            Teacher              & Student              & Method           & mAP$\uparrow$  & Flops$\downarrow$ & Params$\downarrow$ & Im/s$\uparrow$ \\ \midrule
+            ViT-B                & -                    & Supervised       & 65.65          & 107G              & 114M               & 20             \\
+            R101                 & -                    & Supervised       & 73.56          & 60G               & 63M                & 12             \\
+            -                    & ViT-T                & Supervised       & 62.85          & 68G               & 26M                & 14             \\
+            -                    & R50                  & Supervised       & 72.43          & 33G               & 44M                & 12             \\ \midrule
+            R101                 & R50                  & \small{SimKD}    & \textbf{62.71} & \textbf{29G}      & 44M                & 21             \\
+            \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \small{ReviewKD} & 61.17          & 37G               & 44M                & 19             \\
+            ViT-B                & ViT-T                & \small{SimKD}    & 57.51          & 42G               & \textbf{26M}       & 22             \\
+            \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \small{ReviewKD} & 57.2           & 84G               & \textbf{26M}       & \textbf{17}    \\ \bottomrule
+        \end{tabular}}
+\end{table}
+
+\section{Results \& Discussion}\label{sec:analysis}
+
+
+
+\begin{table*}
+    \centering
+    \caption{Validation \ANLS{} (scaled to \%) of \textsc{Llama-2-7b-chat} \cite{touvron2023llama} on SP-DocVQA \cite{mathew2021docvqa} (top) and InfographicVQA \cite{mathew2022infographicvqa} (bottom), where (if marked) the prompt is enriched with DLA predictions from a ViT-B-based MaskRCNN.}
+    \label{tab:downstream_docvqa}
+    \resizebox{0.8\textwidth}{!}{%
+        \begin{tabular}{@{}lll|c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{\extracolsep{0.25em}}>{\small}c@{}}
+
+            %\begin{tabular}{@{}lll|c@{\extracolsep{0.05em}}*{11}{>{\small}c}@{}}
+            \toprule
+            space      & task       & DLA        & $\mathrm{ANLS}_{val}$ & Image/Photo & Yes/No & Figure/diagram & Form  & Free\_text & Handwritten & Layout & Others & Table/list \\
+            \midrule
+            \bluecheck & \bluecheck & \bluecheck & 61.2                  & 44.58       & 49.13  & 40.28          & 68.95 & 68.39      & 52.81       & 61.38  & 56.44  & 56.7       \\
+            \redmark   & \bluecheck & \bluecheck & 58.39                 & 44.43       & 41.67  & 34.81          & 66.38 & 67.82      & 52.1        & 59.19  & 55.91  & 52.79      \\
+            %\bluecheck & \redmark   & \bluecheck & 4.28                  & 4.37        & 0.0    & 1.36           & 2.84  & 6.87       & 1.68        & 6.32   & 6.77   & 2.26       \\
+            %\redmark   & \redmark   & \bluecheck & 4.01                  & 4.53        & 0.0    & 0.99           & 2.46  & 7.88       & 1.51        & 5.98   & 6.57   & 1.77       \\
+            \bluecheck & \bluecheck & \redmark   & 62.46                 & 42.95       & 49.43  & 40.93          & 71.15 & 70.59      & 55.87       & 61.87  & 61.05  & 58.31      \\
+            \redmark   & \bluecheck & \redmark   & 57.63                 & 45.38       & 51.52  & 34.97          & 67.88 & 69.71      & 53.19       & 55.51  & 55.78  & 53.81      \\
+            %\bluecheck & \redmark   & \redmark   & 4.61                  & 2.97        & 0.0    & 1.25           & 3.31  & 7.55       & 2.14        & 6.48   & 8.45   & 2.59       \\
+            %\redmark   & \redmark   & \redmark   & 4.3                   & 4.25        & 5.36   & 1.46           & 2.69  & 8.99       & 1.74        & 6.1    & 7.72   & 1.87       \\
+            \bottomrule
+        \end{tabular}}
+    \resizebox{0.9\textwidth}{!}{%
+        \begin{tabular}{@{}lll|c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{\extracolsep{0.25em}}>{\footnotesize}c@{}}
+            \toprule
+            space      & task       & DLA        & $\mathrm{ANLS}_{val}$ & Arithmetic & Comparison & Counting & Figure & Map   & Multi-span & Abs   & Q span & Single span & Table/list & Text  & Visual/layout \\
+            \midrule
+            \bluecheck & \bluecheck & \bluecheck & 28.05                 & 9.92       & 25.28      & 7.83     & 26.28  & 19.0  & 21.85      & 8.82  & 41.84  & 33.54       & 25.57      & 34.6  & 29.17         \\
+            \redmark   & \bluecheck & \bluecheck & 28.36                 & 14.93      & 29.15      & 7.64     & 27.05  & 19.0  & 19.41      & 11.21 & 46.87  & 33.35       & 25.56      & 34.59 & 26.69         \\
+            %\bluecheck & \redmark   & \bluecheck &  0.38 & 0.0 & 0.0 & 0.0 & 0.19 & 0.0 & 0.56 & 0.0 & 0.0 & 0.49 & 0.4 & 0.82 & 0.0  \\                                                                                                                                                        
+            %\redmark   & \redmark   & \bluecheck &    0.57 & 0.0 & 0.0 & 0.0 & 0.16 & 0.85 & 0.52 & 0.0 & 0.0 & 0.76 & 0.93 & 1.19 & 0.0  \\                                                                                                                                                       
+            \bluecheck & \bluecheck & \redmark   & 27.97                 & 9.78       & 25.13      & 6.99     & 25.93  & 21.04 & 22.33      & 8.2   & 43.36  & 33.53       & 25.76      & 35.06 & 27.47         \\
+            \redmark   & \bluecheck & \redmark   & 29.08                 & 14.15      & 26.94      & 11.35    & 27.52  & 19.1  & 19.79      & 12.79 & 48.44  & 33.79       & 26.17      & 35.24 & 26.39         \\
+            %\bluecheck & \redmark   & \redmark   & 0.69                  & 0.0        & 0.0        & 0.0      & 0.32   & 0.0   & 0.9        & 0.0   & 0.53   & 0.86        & 1.08       & 1.55  & 0.0           \\
+            %\redmark   & \redmark   & \redmark   & 0.81                  & 0.0        & 0.0        & 0.23     & 0.42   & 0.0   & 0.93       & 0.12  & 0.64   & 0.98        & 1.0        & 1.93  & 0.47          \\
+            \bottomrule
+        \end{tabular}}
+\end{table*}
+
+
+\paragraph{DLA-KD}
+
+
+This work investigates different SOTA KD methods and integrates them into the DLA framework with ResNet and ViT feature extraction backbones.
+% \cref{tab:dla_kd} shows the performance of distilled student models in comparison with supervised teacher and student backbones for DocLayNet~\cite{pfitzmann2022doclaynet}.
+KD in DLA poses significant challenges owing to the intricate nature of detection, introducing new obstacles related to regression, region proposals, and sparser label volumes \cite{chen2017learning}. As motivated in \cref{sec:KD-methods}, we prioritize feature-based KD methods, with results on DocLayNet in \cref{tab:dla_kd}.
+The performance comparison in terms of mAP metrics and FLOP counts show that Resnet-50 students with SimKD are overall superior in terms of both efficiency and detection, while ViT-Tiny student has the smallest number of parameters with comparable performance in terms of mAP.
+
+However, one can observe a generally large knowledge gap between the teacher and student model ($\approx$ 8\% for ViT and $\approx 10\%$ for the ResNets) as the crucial details about the document object boundaries, shapes, and sizes can get lost during the compression process. Not only that, KD performance with a ViT backbone is worse compared to Resnets due to (i) the attention overhead, \ie transferring this attention-based knowledge to a student model requires careful consideration of how to distill these complex attention patterns effectively,  and (ii) initialization and hyperparameter sensitivity, \eg finding an appropriate domain pretrained checkpoint and setting patch sizes, attention heads, \etc can affect the KD process, requiring more delicate tuning. The CNN layers of Resnets are, on another hand, permutation invariant and provide more flexibility towards KD.
+
+KD methods are hard to integrate for object detection frameworks, especially when it comes to ViTs where there is no intermediate multi-scaled FPN module.
+%The challenge lies in how to transfer the teacher's intermediate feature representation to the student model. 
+Our contribution lies in extending the hybrid SimKD~\cite{SimKD} method for the DLA task and also showing competitive analysis with the existing SOTA ReviewKD~\cite{chen2021distilling}.
+%Due to this obstacle related to regression, logit-based KD methods \cite{yang2023knowledge} failed to perform satisfactorily as Logits, which represent class scores before softmax normalization, do not provide sufficient information about the spatial localization of objects. 
+%So, we use a feature-based technique ReviewKD \cite{chen2021distilling} and a hybrid technique SimKD \cite{chen2022knowledge} to perform this analysis (see Table \ref{tab:dla_kd}).
+%So it can be concluded that ResNets are the winner for effective KD-DLA, subsequently put to te test in the following downstream DocVQA task by providing accurate localization with a smaller model size.
+
+
+
+\paragraph{Downstream DLA-KD} \cref{tab:downstream_docvqa} reports results on the validation sets as these are hyper-annotated with evidence, question and answer types, and operations, allowing for more fine-grained analysis.
+Detail results of distilled DLA-enriched prompts are available in \cref{tab:detail_dla_downstream_docvqa,tab:detail_dla_downstream_infographicsvqa}.
+
+On SP-DocVQA, DLA-enriched prompting (without spacing) improves from $57.63 \to 58.39$, whereas (with spacing) the improvement ($27.97 \to 28.05$) is less pronounced on InfographicVQA, yet  DLA predictions are still useful in this setting, as also evidenced by questions involving 'Visual/Layout'. This is likely due to the more visual and layout complexity of the dataset, wherefore DLA predictions are less accurate. Strikingly, spacing performs generally worse on Infographics, pointing to the heuristic nature of the structure-preserving OCR algorithm of \cite{wang2023layout} that fails on structurally complex documents with visually-situated language, charts with axes labels, legends, \etc.
+
+The objective of these experiments was to make (distilled) DLA output useful in enriching text-only LLMs with more semantic layout information beyond geometric-spatial relations.
+For every setting tested, the task instruction (\cref{sec:supp-procedure-prompt}) is vital (else $\mathrm{ANLS} < 5\%)$ in the zero-shot setting.
+We hypothesize that for SP-DocVQA line/row/column-level key-value pair recognition suffices for attaining good performance, thus expecting little benefit from DLA-enriched prompts.
+However, as these experiments are bound to the layout classes as pre-defined in DocLayNet, we believe that richer layout information, closer to semantic regions (\eg an address block instead of an OCR block), and including specification of common document objects such as stamps, logos, watermarks, \etc, should benefit downstream DU tasks.
+%which are still closer to geometric than semantic dcument regions,
+
+
+\begin{table*}[h]
+    \centering
+    \caption{Performance per KD method over metrics averaged over architectures on RVL-CDIP dataset (In-Domain) and RVL-CDIP-N dataset (Out-Of-Distribution).}
+    \label{tab:covarvsid_perKDmethod}
+\resizebox{1\textwidth}{!}{
+        \begin{tabular}{ccc}
+            \includegraphics[width=0.27\textwidth]{images/KDD/Accuracy ID_KDplot.png}
+                                                                                 &
+            \includegraphics[width=0.27\textwidth]{images/KDD/ECE ID_KDplot.png} &
+            \includegraphics[width=0.42\textwidth]{images/KDD/AURC ID_KDplot.png}  \\
+        \end{tabular}}
+\end{table*}
+
+
+\paragraph{DIC-KD} This task benchmark reports on experiments with 3 backbones, 2 student architectures (except 1 for Resnet), and 6 KD methods each. \cref{tab:dic} details the ViT and DiT results, whereas the ResNet results (following similar trends) are available in \cref{tab:results_rvl_resnet}.
+The same set of experiments was repeated for randomly initialized students (\cref{tab:ablation-vit-rand,tab:ablation-cnn-rand}).
+Given the comprehensive scope of the DIC experiments, we can make claims regarding the overall most performant KD method, the teacher-student capacity gap, and the architecture-pretraining gap.
+ViT-Small student distilled with the SimKD~\cite{SimKD} method performs best in terms of accuracy and AURC. Note that the best ViT-Tiny student with only 5.5M parameters reaches 83\% accuracy with SimKD, only 2.9\% behind the best ViT-Small student with 86M parameters, showing the potential of advanced KD methods in retaining accuracy at such a large capacity gap.
+SimKD performs admirably in terms of accuracy, sometimes (depending on the projector type (MLP and CNN)) as well as the supervised teacher. In terms of AURC, NKD and MSE approaches are best-performing, which are both response-based methods. Another interesting property we investigated has been the pretraining gap by doing distillation experiments from ViT-to-ViT and DiT-to-ViT to see how document pretraining impacts KD performance.
+As shown in \cref{tab:dic}, results indicate that a self-supervised teacher like DiT does not meet expectations when distilling the knowledge to a ViT-based student pretrained with ImageNet weights. This could be attributed to the large representation gap in the feature space between the RVL-CDIP pretrained and ImageNet pretrained models. However, evaluation under covariate shift on RVL-CDIP-N, as shown in ~\cref{tab:rvl_n}, demonstrates DiT-based students (distilled with response-based KD strategies) to perform better than ViT$\to$ViT students, pointing to the potential of self-supervision for robust to distribution shift.
+
+
+% \draft{
+% \begin{enumerate}
+%   \item Overall most performant method (ranking)
+%         \begin{itemize}
+%           \item Does the best tiny approximate small?
+%           \item SimKD is a particularly strong KD method, always outperforming vanilla KD and supervised student fine-tuning.
+%           \item Accuracy: SimKD with either a CNN projector (DiT) or CLS MLP projector (ViT)
+%           \item ECE: irrespective of accuracy,
+%           \item AURC: NKD and MSE are the highest ranked, although the former does not perform too great in terms of accuracy
+%         \end{itemize}
+%   \item \textbf{Teacher-student capacity gap}
+%         \begin{itemize}
+%           \item Does the best tiny approximate small?
+%           \item Are some methods better at retaining accuracy at a larger capacity gap?
+%         \end{itemize}
+%   \item  \textbf{Architecture-pretraining gap}
+%         \begin{itemize}
+%           \item ViT-to-ViT gives better performance than DiT-to-ViT, which prompts the recommendation to not try to distill from a differently pretrained architecture.
+%           \item  Is it better to use a self-supervised closer to ldomain teacher (DiT)?
+%                 No, there seems to be a feature representation gap that worsens transfer from a self-supervised teacher to a ViT student pretrained on ImageNet.
+%           \item However, evaluation on RVL-CDIP-N does show that DiT-based students (logit-based) are more robust to domain shift than ViT-based students.
+%         \end{itemize}
+% \end{enumerate}
+
+% Rand observations:   
+% \begin{itemize}
+%     \item ViT suffer more from student weight initialization, which is evidenced by an average accuracy of 0.5962 for ViT-S/T$_{\operatorname{rand}}$ compared to 0.7675 for R50$_{\operatorname{rand}}$.
+%     \item When the student initialization is not dependent on pretraining, NKD pops up as a performant method, showing the versatility of response-based methods when transfer of feature representations is harder.
+%   \end{itemize}
+
+% }
+
+
+
+\begin{table*}[h]
+    \centering
+    \caption{Results of different KD strategies benchmarked for D/ViT-B teachers applied on the \rvl{} dataset.}
+    \label{tab:dic}
+\begin{minipage}{1\textwidth}
+        \npdecimalsign{.}
+        \nprounddigits{3}
+        \begin{multicols}{2}
+            %\centering
+            \resizebox{0.53\textwidth}{!}{%
+                \begin{tabular}{|r|c|n{1}{3}n{1}{3}n{1}{3}|}
+                    \hline
+                    \multicolumn{5}{|c|}{ViT-B}                                                                                                                                         \\
+                    \hline
+                    Student        & Method                                          & \text{ACC}                     & \text{AURC}                    & \text{ECE}                     \\
+                    \hline
+                    --             & ViT-B                                           & 0.890997274931873              & 0.017270862525174              & 0.033834551278614              \\
+                    --             & ViT-S                                           & 0.853371334283357              & 0.02963421682364               & 0.057859288371025              \\
+                    --             & ViT-T                                           & 0.822045551138778              & 0.040342312570416              & 0.042795402533132              \\  \hline
+                    \textbf{ViT-S} & Vanilla \footnotesize{[$\tau=2.5, \alpha=0.5$]} & 0.85427135678392               & {\npboldmath}0.028376044015258 & {\npboldmath}0.048633268034969 \\
+                                   & NKD \footnotesize{[$\tau=1, \gamma=1.5$]}       & 0.840471011775294              & 0.035729143933197              & 0.073632049497662              \\
+                                   & MSE                                             & 0.854996374909373              & {\npboldmath}0.028086462460537 & 0.050951811632588              \\
+                                   & SimKD \footnotesize{[CLS+MLP]}                  & {\npboldmath}0.85947148678717  & {\npboldmath}0.028154179258953 & 0.28744054887619               \\
+                                   & SimKD \footnotesize{[CNN]}                      & 0.846796169904247              & 0.061565487248227              & 0.141136871882953              \\
+                                   & FitNet \footnotesize{[middle]}                  & 0.842646066151654              & 0.047789833130271              & 0.140569373835247              \\ \hdashline
+                    \textbf{ViT-T} & Vanilla \footnotesize{[$\tau=2.5, \alpha=$]}    & 0.824745618640466              & {\npboldmath}0.03840438493781  & {\npboldmath}0.057973819137046 \\
+                                   & NKD \footnotesize{[$\tau=1, \gamma=1.5$]}       & 0.815070376759419              & 0.045976107157128              & 0.093624998224256              \\
+                                   & MSE                                             & 0.82329558238956               & 0.039916989542324              & 0.065716418501806              \\
+                                   & SimKD \footnotesize{[CLS+MLP]}                  & {\npboldmath}0.829745743643591 & 0.094989035012674              & 0.163239800045468              \\
+                                   & SimKD \footnotesize{[CNN]}                      & 0.829495737393435              & 0.055740155161562              & 0.149636502763522              \\
+                                   & FitNet \footnotesize{[middle]}                  & 0.812345308632716              & 0.050564425673713              & 0.153136880692877              \\
+                    \hline
+                \end{tabular}}
+
+            \columnbreak
+
+            %\centering
+            \resizebox{0.53\textwidth}{!}{%
+                \begin{tabular}{r|c|n{1}{3}n{1}{3}n{1}{3}|}
+                    \hline
+                    \multicolumn{5}{c|}{DiT-B}                                                                                                                                            \\
+                    \hline
+                    Student        & Method                                          & \text{ACC}                     & \text{AURC}                    & \text{ECE}                       \\
+                    \hline
+                    --             & DiT-B                                           & 0.93345                        & 0.07531                        & 0.01036                          \\
+                    --             & ViT-S                                           & 0.831345783644591              & 0.041613747046067              & 0.05588416738398                 \\  % weird that it would differ
+                    --             & ViT-T                                           & 0.801270031750794              & 0.052664442052395              & 0.047248627795926                \\   \hline
+                    \textbf{ViT-S} & Vanilla \footnotesize{[$\tau=2.5, \alpha=0.5$]} & 0.831020775519388              & 0.059765434519678              & 0.07964892708697                 \\
+                                   & NKD \footnotesize{[$\tau=1, \gamma=1.5$]}       & 0.7899197479937                & 0.057617085364736              & { \npboldmath} 0.039520166054908 \\
+                                   & MSE                                             & 0.831495787394685              & 0.059713971239946              & 0.082210771757924                \\
+                                   & SimKD \footnotesize{[CLS+MLP]}                  & 0.838070951773794              & 0.086798506952558              & 0.437770932864024                \\
+                                   & SimKD \footnotesize{[CNN]}                      & {\npboldmath}0.850621265531638 & {\npboldmath}0.048178380071352 & 0.135945939814145                \\
+                                   & FitNet \footnotesize{[middle]}                  & 0.774894372359309              & 0.062749394618595              & 0.077219594958908                \\   \hdashline
+                    \textbf{ViT-T} & Vanilla \footnotesize{[$\tau=2.5, \alpha= $]}   & 0.801195029875747              & 0.063656745246388              & 0.081288359077064                \\
+                                   & NKD \footnotesize{[$\tau=1, \gamma=1.5$]}       & 0.771819295482387              & 0.065576326471767              & {\npboldmath}0.041479419489846   \\
+                                   & MSE                                             & 0.79534488362209               & 0.076443149642281              & 0.080856397866833                \\
+                                   & SimKD \footnotesize{[CLS+MLP]}                  & 0.81609540238506               & 0.104177143748181              & 0.438912200784382                \\
+                                   & SimKD \footnotesize{[CNN]}                      & {\npboldmath}0.832270806770169 & {\npboldmath}0.055690336266242 & 0.152081930408472                \\
+                                   & FitNet \footnotesize{[middle]}                  & 0.753393834845871              & 0.076718310693334              & 0.053645846570217                \\
+                    \hline
+                \end{tabular}}
+        \end{multicols}
+    \end{minipage}
+\end{table*}
+
+
+\paragraph{Covariate shift DIC-KD} To answer if certain KD methods harm a student model's robustness to covariate shift, we plot results per KD method, averaged over the 3 backbones on the (\cref{tab:covarvsid_perKDmethod}).
+This re-establishes the superiority of SimKD [CNN] in terms of accuracy, both ID and OOD, yet due to poor calibration, it loses gain on the teacher in terms of AURC. Strikingly, MSE attained the lowest OOD performance, whereas it was a solid ID choice.
+\cref{tab:rvl_n} provides more detail on the performance of the different KD methods on RVL-CDIP-N, where we observe that grouped per KD strategy response-based is superior over all metrics.
+
+
+
+\section{Conclusion}
+KD-based model compression has been a popular technique in recent years, albeit DU research has not paid much attention to efficiency.
+Our work explores a limited scope of KD for DU at scale, revealing great potential for creating efficient counterparts of cumbersome DLA models used today.
+Moreover, we investigate the potential of DLA for enriching document inputs in downstream DocVQA tasks.
+Traditionally, DocVQA has relied on plain OCR text. While structure-preserving OCR provides a notion of geometric layout for downstream, DLA was never considered before for the same purpose, yet our experiments show promise.
+
+The more comprehensive benchmarking of KD methods in DIC with ID evaluation and a covariate shift protocol reveals interesting observations regarding the feature representation and weight initialization gap between DiT (documents) and ViT (natural images), albeit self-supervision for students is more robust in the OOD setting.
+
+%DLA, being capable of region-level class understanding, compels the preprocessed input toward regional modeling for the downstream DocVQA. We find regional modeling to be a valuable and efficient alternative to conventional OCRs for the downstream performance of DocVQA. To this end, looking at the aspect of efficiency, we claim that KD has a fairly high potential for obtaining efficient DLA models. 
+
+% used in preprocessing as it has decent performance for DocVQA with efficient regional modelling.
+
+%While we have explored the scope of KD in the aforementioned context, all the possible KD methods could not covered in this paper and an in-depth analysis of the same would provide a greater understanding of efficiency both at the pre-processing and downstream level. Moreover, multimodal KD was not considered in this work, holding promise to explore more efficient DU models. 
+% \jvl{
+% Moving toward semantic region-based modeling is a great pursuit, as bootstrapping regions based on more efficient visual document layout models will be key to processing long structured documents in any language-guided application (document editing or question answering, content retrieval).
+% Our technical report on model compression with KD methods demonstrates that \todo[inline]{Conclusions from analysis: i) KD has potential for more efficient DLA models, at least when evaluated downstream, ii) .... }
+% }
+
+% \jvl{
+%   incorporate into above
+
+%   \paragraph{Future work}: The design space of the proposed KD framework is large, and we have only scratched the surface. We believe that the following dimensions are worth exploring:
+%   \begin{itemize}
+%     \item teachers trained to full convergence are not necessarily the best teachers for feature-based distillation, intermediate teachers might allow for better transfer, as inspired by the information bottleneck theory \cite{tishby2015deep}
+% \item  KD methods that are more tailored to the task of DLA, \eg by distilling from intermediate layers of the teacher, or by using a different loss function (\eg contrastive loss)
+%     \item classifier-to-detector distillation \cite{guo2021distilling}
+% \item cross-architecture KD, \eg from CNN to ViT, or from ViT to CNN
+%     \item The breadth of KD methods and approaches: self-distillation [cite], online distillation [cite],
+%     \item Building a fully multimodal KD framework also considering document text/OCR inputs and allowing for generative model distillation
+% %\item  KD methods that can be used in a meta-architecture like Mask R-CNN, \eg by distilling from the backbone
+% \item  KD methods that can be used in a semi-supervised fashion, \eg by distilling from the teacher's unlabeled predictions on the student's unlabeled data
+% \item  KD methods that can be used in a multi-task learning setting, \eg by distilling from the teacher's predictions on other tasks
+% \end{itemize}
+% }
+
+
+\paragraph{Limitations}
+While we primarily use DocLayNet, it remains the DLA dataset with the most diversity in layout elements both in terms of categories and shape or size. However, the downstream DocVQA results urge for more diversity in terms of document types, domains, and objects (\eg layout objects such as logos, watermarks, stamps, signatures, \etc). Thus, the community is in dire need of a dataset diverse enough to guarantee a performance improvement downstream. Moreover, multimodal KD was not considered in this work, holding promise for more efficient, all-round DU models.
+The downstream task was not tested on \cite{VanLandeghem2023dude} as multipage documents are more complex to benchmark with limited sequence length LLMs.
+Also, DLA being a fairly complicated instance segmentation task, makes it difficult to adapt for KD-based model compression, ruling out some KD methods. This calls for a better experimental framework and architectural modeling to boost the exploration of KD in DLA, in turn, incubating downstream advances in processing and understanding VRDs.
+
+%endcontenthere
 \end{document}
