@@ -1,0 +1,21 @@
+_BASE_: "../Base-RCNN-ViTDet.yaml"
+MODEL:
+  WEIGHTS: detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_base.pth
+  MASK_ON: True
+  VIT:
+    ARCH: 'base'    # options: 'base', 'huge', 'large', 'tiny', 'small'
+    DEPTH: 12
+    PATCH_SIZE: 16
+  # RESNETS:
+  #   DEPTH: 50
+DATASETS:
+  TRAIN: ("doclaynet_train",)
+  TEST: ("doclaynet_val",)
+SOLVER:
+  IMS_PER_BATCH: 2
+  BASE_LR: 0.0025
+  STEPS: (210000, 250000)
+  MAX_ITER: 270000
+TEST:
+  EVAL_PERIOD: 2000
+OUTPUT_DIR: "output/doclaynet/mask_rcnn/vitb"

@@ -1,0 +1,44 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  DISTILLER:
+    MODEL_LOAD_OFFICIAL: False
+    MODEL_LOAD_FILE: True
+    MODEL_DISTILLER_CONFIG: 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'
+    DISTILL_FLAG: 'distill_only'
+    TEACHER: 'ModelTeacher'
+    PRETRAIN_TEACHER_ITERS: -1
+    BYPASS_DISTILL: 1000
+    BYPASS_DISTILL_AFTER: 85000
+    TYPES: ['SimKD_FPN']
+    PRELOAD_TEACHER: ''
+    PRELOAD_TYPE: 'none' # 'teacher_only'
+    PRELOAD_FPN: True
+    PRELOAD_HEAD: True
+    STOP_JOINT: -1
+    KD:
+      PROJECTOR_TYPE: 'conv'
+      PROJECTOR_MODE: 'multiple'
+      PROJ_INFEAT: [256, 256, 256, 256, 256] # {'p2': 256, 'p3': 256, 'p4': 256, 'p5': 256, 'p6': 256}
+      PROJ_OUTFEAT: [256, 256, 256, 256, 256] # {'p2': 256, 'p3': 256, 'p4': 256, 'p5': 256, 'p6': 256}
+      RESHAPE: None
+      T_RESHAPE: None
+      INPUT_FEATS: ['p2', 'p3', 'p4', 'p5', 'p6']
+    SOLVER:
+      BASE_LR: 0.01 # 0.0001
+      OPTIMIZER: 'ADAMW'
+      LR_SCHEDULER_NAME: 'WarmupCosineLR'
+      MOMENTUM: 0.9
+      WEIGHT_DECAY: 0.001 # 0.0001
+DATASETS:
+  TRAIN: ("doclaynet_train",)
+  TEST: ("doclaynet_val",)
+SOLVER:
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  CLIP_GRADIENTS: {"ENABLED": True}
+TEST:
+  EVAL_PERIOD: 2000

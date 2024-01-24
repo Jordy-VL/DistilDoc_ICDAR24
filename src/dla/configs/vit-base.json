@@ -1,0 +1,46 @@
+{
+  "_name_or_path": "google/vit-base-patch16-224-in21k",
+  "architectures": [
+    "ViTModel"
+  ],
+  "attention_probs_dropout_prob": 0.0,
+  "encoder_stride": 16,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.0,
+  "hidden_size": 768,
+  "id2label": {
+    "0": "ADVE",
+    "1": "Email",
+    "2": "Form",
+    "3": "Letter",
+    "4": "Memo",
+    "5": "News",
+    "6": "Note",
+    "7": "Report",
+    "8": "Resume",
+    "9": "Scientific"
+  },
+  "image_size": 224,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "label2id": {
+    "ADVE": 0,
+    "Email": 1,
+    "Form": 2,
+    "Letter": 3,
+    "Memo": 4,
+    "News": 5,
+    "Note": 6,
+    "Report": 7,
+    "Resume": 8,
+    "Scientific": 9
+  },
+  "layer_norm_eps": 1e-12,
+  "model_type": "vit",
+  "num_attention_heads": 12,
+  "num_channels": 3,
+  "num_hidden_layers": 12,
+  "patch_size": 16,
+  "qkv_bias": true,
+  "transformers_version": "4.28.0.dev0"
+}

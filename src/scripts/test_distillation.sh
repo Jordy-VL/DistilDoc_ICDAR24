@@ -1,0 +1,5 @@
+cd ../clf
+python3 train_student.py --teacher_model jordyvl/vit-base_rvl_tobacco --epochs 1 --dataset 'maveriq/tobacco3482' --expt_name 'dit-tiny_test' --distill_loss 'CE+KD' --distill 'kd' --student_model 'dit-tiny' --alpha 0.5 --temperature 2.0  --gamma 1 --beta 0 --batch_size 6
+#python3 train_student.py --teacher_model jordyvl/vit-base_rvl_tobacco --epochs 1 --dataset 'maveriq/tobacco3482' --expt_name 'dit-tiny_test' --distill_loss 'MSE' --distill 'hint' --student_model 'dit-tiny' --alpha 0.5 --temperature 2.0  --gamma 1 --beta 0  --batch_size 4
+#python3 train_student.py --teacher_model jordyvl/vit-base_rvl_tobacco --epochs 1 --dataset 'maveriq/tobacco3482' --expt_name 'dit-tiny_test' --distill_loss 'MSE' --distill 'og_simkd' --student_model 'dit-tiny' --alpha 0.5 --temperature 2.0  --gamma 1 --beta 0  --batch_size 4
+#python3 train_student.py --teacher_model dit --epochs 1 --dataset 'maveriq/tobacco3482' --expt_name 'dit-tiny_test' --distill_loss 'CE+KD' --distill 'simkd' --student_model 'dit-tiny' --alpha 0.5 --temperature 2.0  --gamma 0 --beta 0

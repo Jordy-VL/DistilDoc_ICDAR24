@@ -1,0 +1,16 @@
+.vscode/
+__pycache__/*
+model_zoo/__pycache__/*
+teacher_zoo/__pycache__/*
+distiller_zoo/__pycache__/*
+arch_utils/__pycache__/*
+odmodeling/__pycache__/*
+
+output/*
+pretrained/*
+*.out
+*.pth
+config.py
+save
+related-work
+wandb/

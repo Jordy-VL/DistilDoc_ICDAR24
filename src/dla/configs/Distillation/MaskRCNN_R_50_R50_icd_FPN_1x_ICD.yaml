@@ -1,0 +1,33 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  DISTILLER:
+    MODEL_LOAD_OFFICIAL: False
+    MODEL_LOAD_FILE: True
+    MODEL_DISTILLER_CONFIG: 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'
+    DISTILL_FLAG: 'distill_and_supervision'
+    TEACHER: 'ICDTeacher'
+    PRETRAIN_TEACHER_ITERS: 10000
+    BYPASS_DISTILL: 1000
+    BYPASS_DISTILL_AFTER: 85000
+    TYPES: ['ICD']
+    PRELOAD_TEACHER: ''
+    PRELOAD_TYPE: 'teacher_only'
+    PRELOAD_FPN: True
+    PRELOAD_HEAD: True
+
+    KD:
+      INPUT_FEATS: ['p2', 'p3', 'p4', 'p5', 'p6']
+      MAX_LABELS: 100
+      INS_ATT_MIMIC:
+        WEIGHT_VALUE: 3.0
+DATASETS:
+  TRAIN: ("doclaynet_train",)
+  TEST: ("doclaynet_val",)
+SOLVER:
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  CLIP_GRADIENTS: {"ENABLED": True}
