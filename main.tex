@@ -27,7 +27,7 @@
 \captionsetup{
   %justification=centering,
   singlelinecheck=false,
-  font=small,labelfont=bf,labelsep=space,belowskip=10pt,aboveskip=10pt}
+  font=small,labelfont=it,belowskip=10pt,aboveskip=10pt}
 
 \floatsetup[table]{capposition=top}
 \floatsetup[figure]{capposition=bottom}
@@ -97,18 +97,21 @@ To handle the computational demand of modality/task-specific models, knowledge d
 The field of Document AI ~\cite{cui2021document} is engaged with representing and understanding VRDs, but thus far has not explored KD-based model compression for improved efficiency and uncertainty estimation \cite{galil2023can}.
 
 This work investigates the potential of enriching VRDs with logical layout structure derived from effective DLA model compression using KD methods to practically and efficiently improve downstream DU applications.
-The nature of the (document) dataset has a major impact on the KD process \cite{stanton2021does}, which required motivated choices (regarding dataset usage \cite{pfitzmann2022doclaynet,
+The nature of the (document) dataset has a major impact on the KD process \cite{stanton2021does}, which requires motivated choices (regarding dataset usage \cite{pfitzmann2022doclaynet,
     antonacopoulos2009realistic,
-    harley2015evaluation}, architectures, weight initialization \cite{li2022dit}, KD methods~\cite{SimKD, he2021distilling, chen2021distilling, zhang2020distilling, hsieh2023distilling,hinton2015distilling}, evaluation, downstream procedure \cite{wang2023layout}, \etc) in designing our novel experimental methodology of KD benchmarking for DU tasks (DIC, DLA). This allows us to investigate aspects affecting teacher-student knowledge/capacity/initialization gaps.
+    harley2015evaluation}, architectures, weight initialization \cite{li2022dit}, KD methods~\cite{SimKD, he2021distilling, chen2021distilling, zhang2020distilling, hsieh2023distilling,hinton2015distilling}, evaluation, downstream procedure \cite{wang2023layout}, \etc) in designing our experimental methodology of KD benchmarking for DU tasks (DIC, DLA). This allows us to investigate aspects affecting teacher-student knowledge/capacity/initialization gaps. 
 
-\noindent The key contributions of the paper are twofold:
+%In particular, we adapted KD methods to work with DU task and architecture specifics, \eg Vision Transformer as a backbone in FasterRCNN, updated KD methods for use with Transformers, including novel projector design for SimKD.  
+    
+
+\noindent The key contributions of the paper are two-fold:
 \begin{enumerate}
     [label=\Roman*.,leftmargin=2\parindent]
     \item  We are the first to design, apply, and open-source an experimental methodology for comprehensively benchmarking KD-based model compression on DU tasks involving VRDs (DIC and DLA).
     \item  We design a novel evaluation procedure based on the downstream task of zero-shot layout-aware DocVQA to quantify the robustness of distilled DLA models.
 \end{enumerate}
 
-\noindent Nevertheless, our key contributions go beyond mere KD-based compression benchmarking, promoting logical layout analysis over geometric layout to enhance the generalization of DU models toward unseen documents with diverse and complex layouts, as demonstrated in \Cref{fig:new-hero}.
+\noindent Nevertheless, our key contributions go beyond mere KD-based compression benchmarking, promoting \textbf{logical layout} analysis over geometric layout to enhance the generalization of DU models toward unseen documents with diverse and complex layouts, as demonstrated in \Cref{fig:new-hero}.
 
 \section{Related Work}
 
@@ -195,8 +198,11 @@ Our work's scope will be offline KD schemes% (vs. online and self-distillation)
 
     \begin{figure*}[t]
         \centering
-        \includegraphics[width=\textwidth]{images/distildoc_v6.pdf}
-        \caption{\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications. Discussed in detail in \Cref{sec:exps}}}
+        \makebox[\textwidth][c]{
+        \includegraphics[width=1.1\textwidth]{images/distildoc_v6.pdf}}
+        \caption{
+        \textbf{Proposed experimental methodology} to comprehensively study all aspects (left-to-right) that impact \textit{KD methods} (response, feature; projectors) adapted for \textit{VDU task specifics} (architecture, weight initialization, pretraining \& finetuning datasets, student capacity).        Downstream setups evaluate the robustness of distilled students.}
+        %\jvl{Proposed KD experimental methodology with datasets, architectures, and evaluation for DIC and DLA applications. Discussed in detail in \Cref{sec:exps}}}
         \label{fig:backup-hero}
     \end{figure*}
 
@@ -655,10 +661,10 @@ However, as these experiments are bound to the layout classes as pre-defined in 
 \paragraph{DIC-KD} This task benchmark reports on experiments with 3 backbones, 2 student architectures (except 1 for Resnet), and 6 KD methods each. \cref{tab:dic} details the ViT and DiT results, whereas the ResNet results (following similar trends) are available in \cref{tab:results_rvl_resnet}.
 The same set of experiments was repeated for randomly initialized students (\cref{tab:ablation-vit-rand,tab:ablation-cnn-rand}).
 Given the comprehensive scope of the DIC experiments, we can make claims regarding the overall most performant KD method, the teacher-student capacity gap, and the architecture-pretraining gap.
-ViT-Small student distilled with the SimKD~\cite{SimKD} method performs best in terms of accuracy and AURC. Note that the best ViT-Tiny student with only 5.5M parameters reaches 83\% accuracy with SimKD, only 2.9\% behind the best ViT-Small student with 86M parameters, showing the potential of advanced KD methods in retaining accuracy at such a large capacity gap.
+ViT-Small student distilled with the SimKD~\cite{SimKD} method performs best in terms of accuracy and AURC. Note that \textit{the best ViT-Tiny student with only 5.5M parameters reaches 83\% accuracy with SimKD, only 2.9\% behind the best ViT-Small student with 86M parameters}, showing the potential of advanced KD methods in retaining accuracy at such a large capacity gap.
 SimKD performs admirably in terms of accuracy, sometimes (depending on the projector type (MLP and CNN)) as well as the supervised teacher. In terms of AURC, NKD and MSE approaches are best-performing, which are both response-based methods. 
 % Another interesting property we investigated has been the pretraining gap by doing distillation experiments from ViT-to-ViT and DiT-to-ViT to see how document pretraining impacts KD performance.
-Regarding the pretraining gap, as shown in \cref{tab:dic}, results indicate that a self-supervised teacher like DiT does not meet expectations when distilling the knowledge to a ViT-based student pretrained with ImageNet weights. This could be attributed to the large representation gap in the feature space between the RVL-CDIP pretrained and ImageNet pretrained models. However, evaluation under covariate shift on RVL-CDIP-N, as shown in ~\cref{tab:rvl_n}, demonstrates DiT-based students (distilled with response-based KD strategies) to perform better than ViT$\to$ViT students, pointing to the potential of self-supervision for robust to distribution shift.
+Regarding the pretraining gap, as shown in \cref{tab:dic}, results indicate that a \textit{self-supervised teacher like DiT does not meet expectations} when distilling the knowledge to a ViT-based student pretrained with ImageNet weights. This could be attributed to the large representation gap in the feature space between the RVL-CDIP pretrained and ImageNet pretrained models. However, evaluation under covariate shift on RVL-CDIP-N (\cref{tab:rvl_n}) demonstrates DiT-based students (distilled with response-based KD strategies) to outperform ViT$\to$ViT students, pointing to the \textit{potential of self-supervision for robustness to distribution shift}.
 
 
 % \draft{
@@ -698,8 +704,9 @@ Regarding the pretraining gap, as shown in \cref{tab:dic}, results indicate that
 \begin{table*}[h]
     \centering
     \caption{Results of KD strategies for D/ViT-B teachers on the \rvl{} dataset.}
+    \vspace{-0.2cm}
     \label{tab:dic}
-\begin{minipage}{1\textwidth}
+\begin{minipage}{0.92\textwidth}
         \npdecimalsign{.}
         \nprounddigits{3}
         \begin{multicols}{2}
@@ -763,7 +770,7 @@ Regarding the pretraining gap, as shown in \cref{tab:dic}, results indicate that
 
 \paragraph{Covariate shift DIC-KD} To answer if certain KD methods harm a student model's robustness to covariate shift, we plot results per KD method, averaged over the 3 backbones on the (\cref{tab:covarvsid_perKDmethod}).
 This re-establishes the superiority of SimKD [CNN] in terms of accuracy, both ID and OOD, yet due to poor calibration, it loses gain on the teacher in terms of AURC. Strikingly, MSE attained the lowest OOD performance, whereas it was a solid ID choice.
-\cref{tab:rvl_n} provides more detail on the performance of the different KD methods on RVL-CDIP-N, where we observe that grouped per KD strategy response-based is superior over all metrics.
+\cref{tab:rvl_n} provides detail on the performance of different KD methods on RVL-CDIP-N, where we observe that grouped per KD strategy response-based is superior over all metrics.
 
 
 
@@ -771,8 +778,9 @@ This re-establishes the superiority of SimKD [CNN] in terms of accuracy, both ID
 KD-based model compression has been a popular technique in recent years, albeit DU research has not paid much attention to efficiency.
 Our work explores a limited scope of KD for DU at scale, revealing great potential for creating efficient counterparts of cumbersome DLA models used today.
 Moreover, we investigate the potential of DLA for enriching document inputs in downstream DocVQA tasks.
-Traditionally, DocVQA has relied on plain OCR text. While structure-preserving OCR provides a notion of geometric layout for downstream, DLA was never considered before for the same purpose, yet our experiments show promise.
+Traditionally, DocVQA has relied on plain OCR text. While structure-preserving OCR provides a notion of geometric layout for downstream, DLA was never considered before for the same purpose, yet our experiments show promise. 
 The more comprehensive benchmarking of KD methods in DIC with ID evaluation and a covariate shift protocol reveals interesting observations regarding the feature representation and weight initialization gap between DiT (documents) and ViT (natural images), albeit self-supervision for students is more robust in the OOD setting.
+Our framework enables informed model selection and directs several interesting explorations: how pretraining objectives impact the distillation process, if different layout representations (\eg \cite{huang2022layoutlmv3,appalaraju2021docformer,li2021selfdoc,tang2023unifying,zhu-etal-2023-beyond-layout}) allow for a more robust downstream transfer, \etc
 
 %DLA, being capable of region-level class understanding, compels the preprocessed input toward regional modeling for the downstream DocVQA. We find regional modeling to be a valuable and efficient alternative to conventional OCRs for the downstream performance of DocVQA. To this end, looking at the aspect of efficiency, we claim that KD has a fairly high potential for obtaining efficient DLA models. 
 
@@ -801,7 +809,7 @@ The more comprehensive benchmarking of KD methods in DIC with ID evaluation and 
 % \end{itemize}
 % }
 
-
+\vspace{-0.35cm}
 \paragraph{Limitations}
 While we primarily use DocLayNet, it remains the DLA dataset with the most diversity in layout elements both in terms of categories and shape or size. However, the downstream DocVQA results urge for more diversity in terms of document types, domains, and objects (\eg layout objects such as logos, watermarks, stamps, signatures, \etc). Thus, the community is in dire need of a dataset diverse enough to guarantee a performance improvement downstream. Moreover, multimodal KD was not considered in this work, holding promise for more efficient, all-round DU models.
 The downstream task was not tested on \cite{VanLandeghem2023dude} as multipage documents are more complex to benchmark with limited sequence length LLMs.

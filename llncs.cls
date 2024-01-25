@@ -1037,13 +1037,13 @@ to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
 \@author}
  {\small\institutename}
  \end{center}%
- \vspace*{-0.8cm}
+ \vspace*{-0.6cm}
 \begin{figure}
 \makebox[\textwidth][c]{
- \includegraphics[width=1.14\textwidth]{images/DistilDoc_Teaser.pdf}}
- \caption{\texttt{DistilDoc} designs a novel experimental methodology to investigate enriching VRDs with logical layout structure derived from distilled DLA models to practically and efficiently improve downstream applications such as DocVQA with LLMs.} \label{fig:new-hero}
+ \includegraphics[width=1.2\textwidth]{images/DistilDoc_Teaser.pdf}}
+ \caption{\texttt{DistilDoc} presents the first framework to investigate the potential of KD-based DLA model compression to enrich LLM prompts with \textbf{logical layout structure} to practically and efficiently improve downstream applications such as DocVQA.} \label{fig:new-hero}
  \end{figure}
- \vspace*{-1.2cm}
+ \vspace*{-0.7cm}
  }
  
 

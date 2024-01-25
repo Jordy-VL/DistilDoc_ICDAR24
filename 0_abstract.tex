@@ -7,7 +7,7 @@ design a KD experimentation methodology\footnote{Code available at: \url{https:/
 for more lean, performant models on document understanding (DU) tasks that are integral within larger task pipelines.
 \\
 We carefully selected KD strategies (\textsl{response-based, feature-based}) for distilling knowledge to and from backbones with different architectures (\textsl{ResNet, ViT, DiT}) and capacities (\textsl{base-small-tiny}).
-We study what affects the teacher-student knowledge gap and find that some methods (tuned \textsl{vanilla KD}, \textsl{MSE}, \textsl{SimKD} with an apt projector) can consistently outperform supervised student training. Furthermore, we design a downstream task setup to evaluate the robustness of distilled DLA models on zero-shot layout-aware document visual question answering (DocVQA). \\
+We study what affects the teacher-student knowledge gap and find that some methods (tuned \textsl{vanilla KD}, \textsl{MSE}, \textsl{SimKD} with an apt projector) can consistently outperform supervised student training. Furthermore, we design downstream task setups to evaluate covariate shift and the robustness of distilled DLA models on zero-shot layout-aware document visual question answering (DocVQA). \\
 DLA-KD experiments result in a large mAP knowledge gap, which unpredictably translates to downstream robustness, accentuating the need to further explore how to efficiently obtain more semantic document layout awareness.
 }
 
